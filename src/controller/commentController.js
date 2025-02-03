@@ -1,6 +1,8 @@
 const Comment = require("../models/commentsModel");
 const News = require("../models/newsModel");
 const mongoose = require("mongoose");
+const Video = require("../models/videoModel");
+const User = require("../models/userModel");
 
 exports.createComment = async (req, res) => {
   try {
@@ -77,6 +79,45 @@ exports.toggleLikeNews = async (req, res) => {
 
     await news.save();
     res.status(200).json({ success: true, total_Likes: news.total_Likes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.toggleLikeVideo = async (req, res) => {
+  try {
+    const { videoId, userId } = req.body;
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Video not found" });
+    }
+
+    const user = await User.findById(userId); // Find the user
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const likedVideoIndex = user.likedVideos.findIndex(
+      (likedVideo) => likedVideo.videoId.toString() === videoId
+    );
+
+    if (likedVideoIndex === -1) {
+      // Like the video
+      user.likedVideos.push({ videoId }); // Push the videoId object
+      video.total_Likes += 1;
+    } else {
+      // Unlike the video
+      user.likedVideos.splice(likedVideoIndex, 1);
+      video.total_Likes -= 1;
+    }
+
+    await user.save(); // Save the updated user document
+    await video.save(); //Save the updated video document
+    res.status(200).json({ success: true, total_Likes: video.total_Likes });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

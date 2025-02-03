@@ -10,6 +10,7 @@ router.get("/", videoController.getAllVideos);
 
 // Route to get a video by its ID
 router.get("/:id", videoController.getVideoId);
+router.post("/addComment", videoController.addCommentToVideo);
 
 // Route to delete a video by its ID
 router.delete("/:id", videoController.deleteVideo);

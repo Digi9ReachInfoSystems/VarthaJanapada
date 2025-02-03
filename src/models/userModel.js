@@ -46,6 +46,12 @@ const userSchema = new mongoose.Schema({
       timestamp: { type: Date, default: Date.now },
     },
   ],
+  likedVideos: [
+    {
+      videoId: { type: mongoose.Schema.Types.ObjectId, ref: "Video" },
+      timestamp: { type: Date, default: Date.now },
+    },
+  ],
   categoryPreferences: {
     type: Map,
     of: Number,

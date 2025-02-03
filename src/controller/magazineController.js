@@ -1,4 +1,5 @@
 const Magazine = require("../models/magazineModel"); // Capital 'M' for model
+const { search } = require("../routes/newsRoutes");
 
 const createMagazine = async (req, res) => {
   try {
@@ -49,10 +50,38 @@ const deleteMagazine = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+const searchMagazine = async (req, res) => {
+  try {
+    const { query } = req.query; // Use req.query for search parameters
+
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const magazineList = await Magazine.find({
+      title: { $regex: query, $options: "i" }, // Case-insensitive search
+    }).sort({ createdTime: -1 }); // Sort by createdTime (if needed)
+
+    if (magazineList.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No magazines found matching the search criteria",
+      });
+    }
+
+    res.status(200).json({ success: true, data: magazineList });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 module.exports = {
   createMagazine,
   getMagazines,
   getMagazineById,
   deleteMagazine,
+  searchMagazine,
 };

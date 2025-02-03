@@ -5,6 +5,12 @@ const videoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  likedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
@@ -30,7 +36,7 @@ const videoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  Total_likes: {
+  total_Likes: {
     type: Number,
     default: 0,
   },
@@ -41,7 +47,7 @@ const videoSchema = new mongoose.Schema({
   Comments: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Comments",
+      ref: "Comment",
     },
   ],
 });
