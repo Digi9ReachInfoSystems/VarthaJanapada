@@ -1,15 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("./config/mongoConnect");
-const newsRoutes = require("./routes/newsRoutes");
-const categoryRoutes = require("./routes/categoryRoutes");
-const tagRoutes = require("./routes/tagRoutes");
-const userRoutes = require("./routes/userRoutes");
-const authRoutes = require("./routes/authRoutes");
-const bannerRoutes = require("./routes/bannerRoutes");
-const commentRoutes = require("./routes/commentRoutes");
-const videoRoutes = require("./routes/videoRoutes");
+const connectDB = require("./src/config/mongoConnect");
+const newsRoutes = require("./src/routes/newsRoutes");
+const categoryRoutes = require("./src/routes/categoryRoutes");
+const tagRoutes = require("./src/routes/tagRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const authRoutes = require("./src/routes/authRoutes");
+const bannerRoutes = require("./src/routes/bannerRoutes");
+const commentRoutes = require("./src/routes/commentRoutes");
+const videoRoutes = require("./src/routes/videoRoutes");
 
 dotenv.config();
 
