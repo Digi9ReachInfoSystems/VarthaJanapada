@@ -27,8 +27,7 @@ const getMagazineById = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
-
-exports.deleteMagazine = async (req, res) => {
+const deleteMagazine = async (req, res) => {
   try {
     const magazines = await magazine.findByIdAndDelete(req.params.id);
     if (!magazines) {
