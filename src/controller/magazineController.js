@@ -1,9 +1,9 @@
-const magazine = require("../models/magazineModel");
+const Magazine = require("../models/magazineModel"); // Capital 'M' for model
 
 const createMagazine = async (req, res) => {
   try {
-    const magazine = new magazine(req.body);
-    const savedMagazine = await magazine.save();
+    const newMagazine = new Magazine(req.body); // Use 'Magazine' (model)
+    const savedMagazine = await newMagazine.save();
     res.status(201).json({ success: true, data: savedMagazine });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -12,7 +12,7 @@ const createMagazine = async (req, res) => {
 
 const getMagazines = async (req, res) => {
   try {
-    const magazines = await magazine.find();
+    const magazines = await Magazine.find(); // Use 'Magazine'
     res.status(200).json({ success: true, data: magazines });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -21,16 +21,23 @@ const getMagazines = async (req, res) => {
 
 const getMagazineById = async (req, res) => {
   try {
-    const magazines = await magazine.findById(req.params.id);
-    res.status(200).json({ success: true, data: magazines });
+    const magazine = await Magazine.findById(req.params.id); // Use 'Magazine'
+    if (!magazine) {
+      // Check if magazine exists
+      return res
+        .status(404)
+        .json({ success: false, message: "Magazine not found" });
+    }
+    res.status(200).json({ success: true, data: magazine });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
 const deleteMagazine = async (req, res) => {
   try {
-    const magazines = await magazine.findByIdAndDelete(req.params.id);
-    if (!magazines) {
+    const deletedMagazine = await Magazine.findByIdAndDelete(req.params.id); // Use 'Magazine'
+    if (!deletedMagazine) {
       return res
         .status(404)
         .json({ success: false, message: "Magazine not found" });
