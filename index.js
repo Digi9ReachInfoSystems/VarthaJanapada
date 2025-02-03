@@ -10,7 +10,7 @@ const authRoutes = require("./src/routes/authRoutes");
 const bannerRoutes = require("./src/routes/bannerRoutes");
 const commentRoutes = require("./src/routes/commentRoutes");
 const videoRoutes = require("./src/routes/videoRoutes");
-const magazine = require("./src/routes/magazineController");
+const magazine = require("./src/routes/magazineRoutes");
 dotenv.config();
 
 const app = express();
