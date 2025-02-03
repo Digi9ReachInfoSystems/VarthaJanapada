@@ -9,10 +9,17 @@ exports.uploadVideo = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-};
-exports.getAllVideos = async (req, res) => {
+};exports.getAllVideos = async (req, res) => {
   try {
-    const videos = await Videos.find().populate("Comments"); // Populate the comments
+    const videos = await Videos.find().populate({
+      path: "Comments", // Populate the Comments array
+      populate: {
+        // Populate the 'user' field within each comment
+        path: "user", // Assuming your Comment model has a 'user' field referencing the User model
+        select: "displayName profileImage", // Select which fields from the user you want to include (important for performance)
+      },
+    });
+
     res.status(200).json({ success: true, data: videos });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -21,7 +28,13 @@ exports.getAllVideos = async (req, res) => {
 
 exports.getVideoId = async (req, res) => {
   try {
-    const video = await Videos.findById(req.params.id);
+    const video = await Videos.findById(req.params.id).populate({
+      path: "Comments",
+      populate: {
+        path: "user",
+        select: "displayName profileImage", // Select the fields you need
+      },
+    });
     res.status(200).json({ success: true, data: video });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
