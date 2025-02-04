@@ -9,7 +9,8 @@ exports.uploadVideo = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-};exports.getAllVideos = async (req, res) => {
+};
+exports.getAllVideos = async (req, res) => {
   try {
     const videos = await Videos.find().populate({
       path: "Comments", // Populate the Comments array
@@ -80,5 +81,45 @@ exports.addCommentToVideo = async (req, res) => {
     res.status(201).json({ success: true, data: savedComment }); // Respond with the saved comment
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.deleteCommentByUserIdAndCommentId = async (req, res) => {
+  try {
+    const { userId, commentId } = req.body; // Extract userId and commentId
+
+    // Validate ObjectIds
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(commentId)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid userId or commentId" });
+    }
+
+    // Find and delete the comment
+    const comment = await Comment.findOneAndDelete({
+      _id: commentId,
+      user: userId,
+    });
+
+    if (!comment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Comment not found" });
+    }
+
+    // Remove the comment reference from the associated video
+    const video = await Video.findOneAndUpdate(
+      { comments: commentId }, // Fixed: Use "comments" instead of "Comments"
+      { $pull: { comments: commentId } }, // Fixed: Correct field name
+      { new: true }
+    );
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Comment deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -8,3 +8,4 @@ router.get("/:id", magazineController.getMagazineById);
 router.post("/", magazineController.createMagazine);
 
 module.exports = router;
+ 

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const newsController = require("../controller/newsController");
-
+router.get("/latest", newsController.getLatestNews);
 router.post("/createNews", newsController.createNews);
 router.get("/", newsController.getAllNews);
 router.get("/:id", newsController.getNewsById);
@@ -15,4 +15,6 @@ router.delete(
   newsController.deleteComment
 );
 router.get("/search/:query", newsController.searchNews);
+router.get("/categories/:category", newsController.getNewsByCategory);
+
 module.exports = router;

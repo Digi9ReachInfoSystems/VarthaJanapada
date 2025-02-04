@@ -1,6 +1,7 @@
 const User = require("../models/userModel");
 const News = require("../models/newsModel");
 const Category = require("../models/categoryModel");
+const mongoose = require("mongoose");
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
@@ -146,6 +147,120 @@ exports.recommendCategory = async (req, res) => {
       success: true,
       data: recommendedNews,
       recommendedCategory: recommendedCategory.name,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { displayName, email, profileImage } = req.body;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user ID" });
+    }
+
+    // Validate that at least one field is provided
+    if (!displayName && !email && !profileImage) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No update fields provided" });
+    }
+
+    // Check if email is unique
+    if (email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Email is already in use" });
+      }
+    }
+
+    // Update the user profile
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { displayName, email, profileImage } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateUserPreferences = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { categoryIds } = req.body; // List of selected category IDs
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user ID" });
+    }
+
+    // Validate that categoryIds is provided and is an array
+    if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid list of category IDs",
+      });
+    }
+
+    // Validate category IDs
+    for (let id of categoryIds) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid category ID: ${id}`,
+        });
+      }
+    }
+
+    // Check if all provided categories exist
+    const categories = await Category.find({ _id: { $in: categoryIds } });
+    if (categories.length !== categoryIds.length) {
+      return res.status(404).json({
+        success: false,
+        message: "One or more categories not found",
+      });
+    }
+
+    // Update the user's preferences
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { "preferences.categories": categoryIds } },
+      { new: true }
+    ).populate("preferences.categories", "name");
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Preferences updated successfully",
+      data: updatedUser.preferences.categories, // Return selected categories
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

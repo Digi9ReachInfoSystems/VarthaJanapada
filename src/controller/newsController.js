@@ -6,6 +6,7 @@ const textToSpeech = require("@google-cloud/text-to-speech"); // Import TTS
 const fs = require("fs");
 const util = require("util");
 const Comment = require("../models/commentsModel");
+const mongoose = require("mongoose");
 
 const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
 if (!base64Key) {
@@ -309,6 +310,51 @@ exports.deleteComment = async (req, res) => {
       success: true,
       message: "Comment deleted successfully",
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getLatestNews = async (req, res) => {
+  try {
+    const latestNews = await News.find()
+      .sort({ createdTime: -1 }) // Sort by newest first
+      .limit(10) // Get only the latest 10 news articles
+      .populate("category", "name") // Populate category name
+      .populate("tags", "name"); // Populate tags name
+
+    res.status(200).json({ success: true, data: latestNews });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.getNewsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    // Ensure the category exists in the database before querying news
+    const categoryExists = await Category.findById(category);
+    if (!categoryExists) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    // Find news by category (No need for ObjectId conversion, use string comparison)
+    const news = await News.find({ category: category })
+      .populate("category", "name")
+      .populate("tags", "name");
+
+    if (!news || news.length === 0) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "No news articles found for this category",
+        });
+    }
+
+    res.status(200).json({ success: true, data: news });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
