@@ -87,6 +87,7 @@ exports.toggleLikeVideo = async (req, res) => {
   try {
     const { videoId, userId } = req.body;
 
+    // Validate video existence
     const video = await Video.findById(videoId);
     if (!video) {
       return res
@@ -94,30 +95,36 @@ exports.toggleLikeVideo = async (req, res) => {
         .json({ success: false, message: "Video not found" });
     }
 
-    const user = await User.findById(userId); // Find the user
+    // Validate user existence
+    const user = await User.findById(userId);
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
 
+    // Check if the user has already liked the video
     const likedVideoIndex = user.likedVideos.findIndex(
       (likedVideo) => likedVideo.videoId.toString() === videoId
     );
 
     if (likedVideoIndex === -1) {
-      // Like the video
-      user.likedVideos.push({ videoId }); // Push the videoId object
+      // **Like the video**
+      user.likedVideos.push({ videoId }); // Add to user's likedVideos
       video.total_Likes += 1;
+      video.likedBy.push(userId); // Add userId to likedBy array in video
     } else {
-      // Unlike the video
-      user.likedVideos.splice(likedVideoIndex, 1);
+      // **Unlike the video**
+      user.likedVideos.splice(likedVideoIndex, 1); // Remove from user's likedVideos
       video.total_Likes -= 1;
+      video.likedBy = video.likedBy.filter((id) => id.toString() !== userId); // Remove userId from likedBy array
     }
 
-    await user.save(); // Save the updated user document
-    await video.save(); //Save the updated video document
-    res.status(200).json({ success: true, total_Likes: video.total_Likes });
+    // Save the updated documents
+    await user.save();
+    await video.save();
+
+    res.status(200).json({ success: true, totalLikes: video.totalLikes });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
