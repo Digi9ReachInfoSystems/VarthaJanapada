@@ -14,6 +14,10 @@ const commentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Videos",
   },
+  longVideoRef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "LongVideo",
+  },
   comment: {
     type: String,
     required: true,

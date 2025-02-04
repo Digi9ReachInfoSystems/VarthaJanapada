@@ -11,6 +11,7 @@ const bannerRoutes = require("./src/routes/bannerRoutes");
 const commentRoutes = require("./src/routes/commentRoutes");
 const videoRoutes = require("./src/routes/videoRoutes");
 const magazine = require("./src/routes/magazineRoutes");
+const longVideo = require("./src/routes/longVideoRoutes");
 dotenv.config();
 
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/banner", bannerRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/video", videoRoutes);
 app.use("/api/magazine", magazine);
+app.use("/api/longVideo", longVideo);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
