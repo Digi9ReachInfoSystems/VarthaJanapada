@@ -102,7 +102,8 @@ exports.recommendCategory = async (req, res) => {
     if (Object.keys(categoryCount).length === 0) {
       return res.status(200).json({
         success: true,
-        message: "No categories clicked by the user yet",
+        data: [],
+        // message: "No news has been clicked by the user",
       });
     }
 
