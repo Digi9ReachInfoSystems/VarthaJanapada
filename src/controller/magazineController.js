@@ -79,7 +79,7 @@ const searchMagazine = async (req, res) => {
   }
 };
 
-exports.getTotalMagazines = async (req, res) => {
+const getTotalMagazines = async (req, res) => {
   try {
     const totalMagazines = await Magazine.countDocuments();
     res.status(200).json({ success: true, data: totalMagazines });
@@ -94,4 +94,5 @@ module.exports = {
   getMagazineById,
   deleteMagazine,
   searchMagazine,
+  getTotalMagazines,
 };

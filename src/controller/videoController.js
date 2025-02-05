@@ -123,3 +123,11 @@ exports.deleteCommentByUserIdAndCommentId = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+exports.getTotalNumberOfVideos = async (req, res) => {
+  try {
+    const count = await Videos.countDocuments();
+    res.status(200).json({ success: true, data: count });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
