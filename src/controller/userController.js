@@ -4,7 +4,10 @@ const Category = require("../models/categoryModel");
 const mongoose = require("mongoose");
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find()
+      .populate("preferences.categories", "name") // Populate category names
+      .populate("likedVideos.videoId", "title url thumbnail"); // Populate videos (title, URL, thumbnail)
+
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
