@@ -8,7 +8,13 @@ exports.getAllUsers = async (req, res) => {
       .populate("preferences.categories", "name") // Populate category names
       .populate("likedVideos.videoId", "title url thumbnail"); // Populate videos (title, URL, thumbnail)
 
-    res.status(200).json({ success: true, data: users });
+    // Add totalClickedNews field to each user
+    const updatedUsers = users.map((user) => ({
+      ...user.toObject(),
+      totalClickedNews: user.clickedNews.length, // Count clicked news for each user
+    }));
+
+    res.status(200).json({ success: true, data: updatedUsers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -16,8 +22,26 @@ exports.getAllUsers = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    res.status(200).json({ success: true, data: user });
+    const user = await User.findById(req.params.id)
+      .populate("preferences.categories", "name") // Populate category names
+      .populate("likedVideos.videoId", "title url thumbnail"); // Populate videos (title, URL, thumbnail)
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Count total clicked news items
+    const totalClickedNews = user.clickedNews.length;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...user.toObject(),
+        totalClickedNews, // Include clicked news count in response
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
