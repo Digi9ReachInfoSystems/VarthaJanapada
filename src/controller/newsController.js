@@ -70,7 +70,7 @@ exports.getNewsById = async (req, res) => {
       .populate("tags", "name")
       .populate({
         path: "comments", // Populate the comments field
-        populate: { path: "user", select: "name" }, // Optionally populate the user who commented
+        populate: { path: "user", select: "displayName profileImage" }, // Optionally populate the user who commented
       });
 
     if (!news) {
