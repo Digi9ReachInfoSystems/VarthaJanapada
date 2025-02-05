@@ -267,3 +267,15 @@ exports.updateUserPreferences = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+exports.getTotalUsers = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments(); // Count total users
+
+    res.status(200).json({
+      success: true,
+      totalUsers,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
