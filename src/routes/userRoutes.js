@@ -5,6 +5,7 @@ const userController = require("../controller/userController");
 // Route to get all users
 router.get("/total-users", userController.getTotalUsers);
 router.get("/users", userController.getAllUsers);
+router.get("/new-users", userController.getNewUsersCount);
 
 // Route to get a specific user by ID
 router.get("/users/:id", userController.getUserById);

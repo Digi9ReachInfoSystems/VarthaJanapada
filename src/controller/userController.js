@@ -282,3 +282,25 @@ exports.getTotalUsers = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getNewUsersCount = async (req, res) => {
+  try {
+    // Get the start and end time of yesterday
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const usersCount = await User.countDocuments({
+      createdTime: { $gte: yesterday, $lt: today },
+    });
+
+    res.status(200).json({
+      success: true,
+      newUsers: usersCount,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
