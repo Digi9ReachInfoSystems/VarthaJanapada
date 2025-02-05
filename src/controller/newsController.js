@@ -252,6 +252,7 @@ exports.searchNews = async (req, res) => {
     if (newsList.length === 0) {
       return res.status(404).json({
         success: false,
+        data: [],
         message: "No news articles found matching the search criteria",
       });
     }
@@ -346,12 +347,10 @@ exports.getNewsByCategory = async (req, res) => {
       .populate("tags", "name");
 
     if (!news || news.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "No news articles found for this category",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "No news articles found for this category",
+      });
     }
 
     res.status(200).json({ success: true, data: news });

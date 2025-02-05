@@ -68,6 +68,7 @@ const searchMagazine = async (req, res) => {
     if (magazineList.length === 0) {
       return res.status(404).json({
         success: false,
+        data: [],
         message: "No magazines found matching the search criteria",
       });
     }
