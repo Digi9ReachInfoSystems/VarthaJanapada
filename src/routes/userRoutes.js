@@ -3,11 +3,11 @@ const router = express.Router();
 const userController = require("../controller/userController");
 
 // Route to get all users
+router.get("/total-users", userController.getTotalUsers);
 router.get("/users", userController.getAllUsers);
 
 // Route to get a specific user by ID
 router.get("/users/:id", userController.getUserById);
-router.get("/total-users", userController.getTotalUsers);
 
 // Route to delete a user
 router.delete("/users/:id", userController.deleteUser);
