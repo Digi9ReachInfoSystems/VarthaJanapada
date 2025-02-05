@@ -79,6 +79,15 @@ const searchMagazine = async (req, res) => {
   }
 };
 
+exports.getTotalMagazines = async (req, res) => {
+  try {
+    const totalMagazines = await Magazine.countDocuments();
+    res.status(200).json({ success: true, data: totalMagazines });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createMagazine,
   getMagazines,

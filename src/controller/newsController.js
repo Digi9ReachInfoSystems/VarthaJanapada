@@ -358,3 +358,12 @@ exports.getNewsByCategory = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getTotalNews = async (req, res) => {
+  try {
+    const totalNews = await News.countDocuments();
+    res.status(200).json({ success: true, data: totalNews });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -5,6 +5,7 @@ router.get("/latest", newsController.getLatestNews);
 router.post("/createNews", newsController.createNews);
 router.get("/", newsController.getAllNews);
 router.get("/:id", newsController.getNewsById);
+router.get("/total-news", newsController.getTotalNews);
 router.put("/:id", newsController.updateNews);
 router.delete("/:id", newsController.deleteNews);
 router.get("/translate/:id/:targetLang", newsController.translateNews);
