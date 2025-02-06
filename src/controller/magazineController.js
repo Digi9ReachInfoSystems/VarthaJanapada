@@ -88,6 +88,49 @@ const getTotalMagazines = async (req, res) => {
   }
 };
 
+const updateMagazine = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    // Ensure the magazine exists
+    const magazine = await Magazine.findById(id);
+    if (!magazine) {
+      return res.status(404).json({
+        success: false,
+        message: "Magazine not found",
+      });
+    }
+
+    // Update the magazine with the provided data (partial update)
+    // Only fields that are provided will be updated
+    if (updatedData.title) magazine.title = updatedData.title;
+    if (updatedData.description) magazine.description = updatedData.description;
+    if (updatedData.magazineThumbnail)
+      magazine.magazineThumbnail = updatedData.magazineThumbnail;
+    if (updatedData.magazinePdf) magazine.magazinePdf = updatedData.magazinePdf;
+    if (updatedData.editionNumber)
+      magazine.editionNumber = updatedData.editionNumber;
+
+    // Update the last_updated timestamp
+    magazine.last_updated = new Date();
+
+    // Save the updated magazine
+    const updatedMagazine = await magazine.save();
+
+    res.status(200).json({
+      success: true,
+      data: updatedMagazine,
+      message: "Magazine updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createMagazine,
   getMagazines,
@@ -95,4 +138,5 @@ module.exports = {
   deleteMagazine,
   searchMagazine,
   getTotalMagazines,
+  updateMagazine,
 };
