@@ -8,6 +8,6 @@ router.get("/total-Magazine", magazineController.getTotalMagazines);
 router.get("/:id", magazineController.getMagazineById);
 router.post("/", magazineController.createMagazine);
 router.post("/update/:id", magazineController.updateMagazine);
-router.delete("/delete", magazineController.deleteMagazine);
+router.delete("/delete/:id", magazineController.deleteMagazine);
 
 module.exports = router;
