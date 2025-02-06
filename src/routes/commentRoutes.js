@@ -7,6 +7,7 @@ router.get("/", commentController.getAllComments);
 router.get("/:id", commentController.getCommentByNewsId);
 router.get("/user/:id", commentController.getCommentsByUserId);
 router.delete("/:id", commentController.deletecommentByuserId);
+router.post("/likeLongVideo", commentController.toggleLikeLongVideo);
 router.post("/like", commentController.toggleLikeNews);
 router.post("/likeVideo", commentController.toggleLikeVideo);
 

@@ -1,5 +1,6 @@
 const Videos = require("../models/longVideoModel");
 const Comment = require("../models/commentsModel");
+const mongoose = require("mongoose");
 
 exports.uploadVideo = async (req, res) => {
   try {
@@ -59,27 +60,44 @@ exports.addCommentToVideo = async (req, res) => {
   try {
     const { userId, videoId, text } = req.body;
 
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid videoId" });
+    }
+
+    // Log the videoId for debugging
+    console.log("Video ID:", videoId);
+
+    // Find the video
     const video = await Videos.findById(videoId);
+    console.log("Video:", video); // Log the video for debugging
+
     if (!video) {
       return res
         .status(404)
         .json({ success: false, message: "Video not found" });
     }
 
+    // Create a new comment
     const newComment = new Comment({
-      // Create a new Comment document
       user: userId,
       video: videoId,
       comment: text,
     });
 
-    const savedComment = await newComment.save(); // Save the comment FIRST
+    // Save the comment
+    const savedComment = await newComment.save();
+    console.log("Saved Comment:", savedComment); // Log the saved comment for debugging
 
-    video.Comments.push(savedComment._id); // Push the comment's _id into the video's comments array
-    await video.save(); // Save the updated video
+    // Add the comment ID to the video's Comments array
+    video.Comments.push(savedComment._id);
+    await video.save();
 
-    res.status(201).json({ success: true, data: savedComment }); // Respond with the saved comment
+    res.status(201).json({ success: true, data: savedComment });
   } catch (error) {
+    console.error("Error adding comment:", error); // Log the error for debugging
     res.status(500).json({ success: false, message: error.message });
   }
 };

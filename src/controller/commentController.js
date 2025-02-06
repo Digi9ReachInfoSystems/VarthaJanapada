@@ -3,6 +3,7 @@ const News = require("../models/newsModel");
 const mongoose = require("mongoose");
 const Video = require("../models/videoModel");
 const User = require("../models/userModel");
+const LongVideo = require("../models/longVideoModel");
 
 exports.createComment = async (req, res) => {
   try {
@@ -125,6 +126,49 @@ exports.toggleLikeVideo = async (req, res) => {
     await video.save();
 
     res.status(200).json({ success: true, totalLikes: video.totalLikes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.toggleLikeLongVideo = async (req, res) => {
+  try {
+    const { longVideoId, userId } = req.body;
+
+    // Validate long video existence
+    const longVideo = await LongVideo.findById(longVideoId);
+    if (!longVideo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Long video not found" });
+    }
+
+    // Validate user existence
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Check if the user has already liked the long video
+    const alreadyLiked = longVideo.likedBy.includes(userId);
+
+    if (!alreadyLiked) {
+      // Like the long video: Add the userId to likedBy and increment total_Likes
+      longVideo.likedBy.push(userId);
+      longVideo.total_Likes += 1;
+    } else {
+      // Unlike the long video: Remove the userId from likedBy and decrement total_Likes
+      longVideo.likedBy = longVideo.likedBy.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+      longVideo.total_Likes -= 1;
+    }
+
+    // Save the updated long video document
+    await longVideo.save();
+
+    res.status(200).json({ success: true, totalLikes: longVideo.total_Likes });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
