@@ -16,13 +16,17 @@ exports.createComment = async (req, res) => {
 };
 exports.getAllComments = async (req, res) => {
   try {
-    const comments = await Comment.find();
+    const comments = await Comment.find()
+      .populate("user", "displayName") // Populating user with the displayName field
+      .populate("news", "title") // Populating news with the title field
+      .populate("video", "title"); // Populating video with the title field (corrected model name)
+    // .populate("longVideoRef", "title"); // Populating longVideoRef with the title field
     res.status(200).json({ success: true, data: comments });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+    console.log(error);
   }
 };
-
 exports.getCommentByNewsId = async (req, res) => {
   try {
     const comments = await Comment.find({ news: req.params.id });
