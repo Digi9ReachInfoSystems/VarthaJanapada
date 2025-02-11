@@ -357,7 +357,7 @@ const generateSessionToken = (user) => {
 
 exports.loginOnWeb = async (req, res) => {
   try {
-    const { idToken } = req.body; // Don't use phone_Number from body
+    const { idToken } = req.body; // Expect only the idToken in the body
     if (!idToken) {
       return res
         .status(400)
@@ -371,12 +371,10 @@ exports.loginOnWeb = async (req, res) => {
     // Extract phone number from Firebase Token
     const firebasePhoneNumber = decodedToken.phone_number;
     if (!firebasePhoneNumber) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: "Phone number not found in Firebase token",
-        });
+      return res.status(401).json({
+        success: false,
+        message: "Phone number not found in Firebase token",
+      });
     }
 
     // Check if user exists in database, otherwise create a new user
@@ -419,7 +417,6 @@ exports.loginOnWeb = async (req, res) => {
       .json({ success: false, error: "Invalid Firebase token" });
   }
 };
-
 // 🔹 Logout & Clear Cookies
 exports.logout = (req, res) => {
   res.clearCookie("sessionToken");
