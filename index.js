@@ -17,7 +17,12 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+const corsOptions = {
+  origin: "http://localhost:5173", // Allow only requests from this origin
+  credentials: true, // Allow credentials (cookies, headers)
+};
+
+app.use(cors(corsOptions));
 connectDB();
 app.use(express.json());
 app.use("/api/news", newsRoutes);
