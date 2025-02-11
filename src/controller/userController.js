@@ -347,27 +347,44 @@ const serviceAccount = JSON.parse(
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
+const generateSessionToken = (user) => {
+  return jwt.sign(
+    { userId: user._id, phone_Number: user.phone_Number },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+};
 
 exports.loginOnWeb = async (req, res) => {
   try {
-    const { idToken, phone_Number } = req.body;
+    const { idToken } = req.body; // Don't use phone_Number from body
+    if (!idToken) {
+      return res
+        .status(400)
+        .json({ success: false, message: "ID Token is required" });
+    }
 
     // Verify Firebase ID Token
     const decodedToken = await admin.auth().verifyIdToken(idToken);
+    console.log("Decoded Token:", decodedToken);
 
-    // Check if phone number from Firebase matches the request
-    if (decodedToken.phone_number !== `+91${phone_Number}`) {
+    // Extract phone number from Firebase Token
+    const firebasePhoneNumber = decodedToken.phone_number;
+    if (!firebasePhoneNumber) {
       return res
         .status(401)
-        .json({ success: false, message: "Phone number mismatch" });
+        .json({
+          success: false,
+          message: "Phone number not found in Firebase token",
+        });
     }
 
     // Check if user exists in database, otherwise create a new user
-    let user = await User.findOne({ phone_Number });
+    let user = await User.findOne({ phone_Number: firebasePhoneNumber });
 
     if (!user) {
       user = await User.create({
-        phone_Number,
+        phone_Number: firebasePhoneNumber,
         displayName: decodedToken.name || "New User",
         email: decodedToken.email || "",
         profileImage: decodedToken.picture || "",
@@ -389,9 +406,12 @@ exports.loginOnWeb = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    return res
-      .status(200)
-      .json({ success: true, data: user, token: sessionToken });
+    return res.status(200).json({
+      success: true,
+      data: user,
+      token: sessionToken,
+      message: "Login successful",
+    });
   } catch (error) {
     console.error("Error in loginOnWeb:", error);
     return res
