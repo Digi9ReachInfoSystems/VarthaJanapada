@@ -2,6 +2,8 @@ const User = require("../models/userModel");
 const News = require("../models/newsModel");
 const Category = require("../models/categoryModel");
 const mongoose = require("mongoose");
+const admin = require("firebase-admin");
+const jwt = require("jsonwebtoken");
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
@@ -327,4 +329,79 @@ exports.getNewUsersCount = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+
+if (!serviceAccountBase64) {
+  throw new Error(
+    "FIREBASE_SERVICE_ACCOUNT_BASE64 is missing in environment variables"
+  );
+}
+
+// Convert Base64 back to JSON
+const serviceAccount = JSON.parse(
+  Buffer.from(serviceAccountBase64, "base64").toString("utf8")
+);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+exports.loginOnWeb = async (req, res) => {
+  try {
+    const { idToken, phone_Number } = req.body;
+
+    // Verify Firebase ID Token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+    // Check if phone number from Firebase matches the request
+    if (decodedToken.phone_number !== `+91${phone_Number}`) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Phone number mismatch" });
+    }
+
+    // Check if user exists in database, otherwise create a new user
+    let user = await User.findOne({ phone_Number });
+
+    if (!user) {
+      user = await User.create({
+        phone_Number,
+        displayName: decodedToken.name || "New User",
+        email: decodedToken.email || "",
+        profileImage: decodedToken.picture || "",
+      });
+    }
+
+    // Update last login time
+    user.last_logged_in = new Date();
+    await user.save();
+
+    // Generate session token
+    const sessionToken = generateSessionToken(user);
+
+    // Set session token in HTTP-only cookie
+    res.cookie("sessionToken", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Enable secure cookies in production
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return res
+      .status(200)
+      .json({ success: true, data: user, token: sessionToken });
+  } catch (error) {
+    console.error("Error in loginOnWeb:", error);
+    return res
+      .status(401)
+      .json({ success: false, error: "Invalid Firebase token" });
+  }
+};
+
+// 🔹 Logout & Clear Cookies
+exports.logout = (req, res) => {
+  res.clearCookie("sessionToken");
+  res.status(200).json({ success: true, message: "Logged out successfully" });
 };

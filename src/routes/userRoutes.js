@@ -16,6 +16,9 @@ router.delete("/users/:id", userController.deleteUser);
 // Route to track news click for a user
 router.post("/track-news-click", userController.trackNewsClick);
 
+router.post("/login-on-web", userController.loginOnWeb);
+router.post("/logout", userController.logout);
+
 // Route to recommend news category based on the user's interactions
 router.get("/recommendations/:userId", userController.recommendCategory);
 
