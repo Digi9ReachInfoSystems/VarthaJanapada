@@ -393,6 +393,9 @@ exports.loginOnWeb = async (req, res) => {
     user.last_logged_in = new Date();
     await user.save();
 
+    // Fetch the userId from the database (this is your MongoDB document _id)
+    const userId = user._id;
+
     // Generate session token
     const sessionToken = generateSessionToken(user);
 
@@ -404,9 +407,11 @@ exports.loginOnWeb = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // Return the response along with userId and sessionToken
     return res.status(200).json({
       success: true,
       data: user,
+      userId: userId, // Include the userId in the response
       token: sessionToken,
       message: "Login successful",
     });
@@ -417,6 +422,7 @@ exports.loginOnWeb = async (req, res) => {
       .json({ success: false, error: "Invalid Firebase token" });
   }
 };
+
 // 🔹 Logout & Clear Cookies
 exports.logout = (req, res) => {
   res.clearCookie("sessionToken");
