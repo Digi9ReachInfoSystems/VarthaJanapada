@@ -19,7 +19,6 @@ router.post("/track-news-click", userController.trackNewsClick);
 router.post("/login-on-web", userController.loginOnWeb);
 router.post("/logout", userController.logout);
 
-router.post("/logout", userController.logout);
 
 // Route to recommend news category based on the user's interactions
 router.get("/recommendations/:userId", userController.recommendCategory);
