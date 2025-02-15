@@ -425,6 +425,12 @@ exports.loginOnWeb = async (req, res) => {
 
 // 🔹 Logout & Clear Cookies
 exports.logout = (req, res) => {
-  res.clearCookie("sessionToken");
+  res.clearCookie("sessionToken", {
+    httpOnly: true,
+    // secure: process.env.NODE_ENV === "production", // Only secure cookies in production
+    sameSite: "strict",
+    maxAge: 0, // Set the cookie expiration to 0 to effectively clear it
+  });
+
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
