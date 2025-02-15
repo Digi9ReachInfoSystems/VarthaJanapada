@@ -16,10 +16,24 @@ exports.signup = async (req, res) => {
   }
 };
 
+exports.signupWithEmail = async (req, res) => {
+  try {
+    const { displayName, profileImage, email } = req.body;
+
+    const user = await User.create({
+      displayName,
+      email,
+      profileImage,
+    });
+    res.status(201).json({ success: true, data: user });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
 exports.login = async (req, res) => {
   try {
     const { phone_Number, email } = req.body;
-
 
     let query = {};
     if (phone_Number) {
@@ -65,7 +79,7 @@ exports.getUserProfile = async (req, res) => {
 
 exports.signUpWithEmail = async (req, res) => {
   try {
-    const { phone_Number, displayName, profileImage, email } = req.body;
+    const { displayName, profileImage, email } = req.body;
 
     const user = await User.create({
       phone_Number,
