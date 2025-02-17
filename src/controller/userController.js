@@ -147,8 +147,8 @@ exports.recommendCategory = async (req, res) => {
 
     if (!topCategory) {
       return res
-        .status(404)
-        .json({ success: false, message: "Category not found" });
+        .status(200)
+        .json({ success: false, message: "Category not found", data: [] });
     }
 
     // Check if another category has more interactions than the current top category
