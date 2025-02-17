@@ -355,7 +355,7 @@ exports.getNewsByCategory = async (req, res) => {
 
     res.status(200).json({ success: true, data: news });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(200).json({ success: false, message: error.message, data: [] });
   }
 };
 
