@@ -34,13 +34,12 @@ exports.login = async (req, res) => {
   try {
     const { phone_Number, email } = req.body;
 
-    // Ensure that at least one of phone_Number or email is provided
-    if (!phone_Number) {
-      return res.status(400).json({
-        success: false,
-        message: "Either phone number or email must be provided",
-      });
-    }
+    // if (!phone_Number) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Either phone number or email must be provided",
+    //   });
+    // }
 
     let query = {};
     if (phone_Number) {
