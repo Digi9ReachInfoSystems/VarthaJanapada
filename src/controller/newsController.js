@@ -192,7 +192,7 @@ exports.getNewsById = async (req, res) => {
 
 exports.updateNews = async (req, res) => {
   try {
-    const { category, tags, ...updateData } = req.body;
+    const { category, tags, hindi, kannada, English, ...updateData } = req.body;
 
     // Validate category existence
     if (category) {
@@ -214,24 +214,51 @@ exports.updateNews = async (req, res) => {
       }
     }
 
-    const news = await News.findByIdAndUpdate(
+    // Validate language fields (Hindi, Kannada, English)
+    const news = await News.findById(req.params.id);
+    if (!news) {
+      return res.status(404).json({ success: false, message: "News not found" });
+    }
+
+    // Update Hindi, Kannada, and English titles and descriptions if they are provided
+    if (hindi) {
+      news.hindi = { ...news.hindi, ...hindi };
+    }
+    if (kannada) {
+      news.kannada = { ...news.kannada, ...kannada };
+    }
+    if (English) {
+      news.English = { ...news.English, ...English };
+    }
+
+    // Update the remaining fields like category, tags, etc.
+    const updatedNews = await News.findByIdAndUpdate(
       req.params.id,
-      { ...updateData, category, tags },
+      {
+        ...updateData,
+        category,
+        tags,
+        hindi: news.hindi,
+        kannada: news.kannada,
+        English: news.English,
+      },
       { new: true }
     )
       .populate("category", "name")
       .populate("tags", "name");
 
-    if (!news) {
+    if (!updatedNews) {
       return res
         .status(404)
         .json({ success: false, message: "News not found" });
     }
-    res.status(200).json({ success: true, data: news });
+
+    res.status(200).json({ success: true, data: updatedNews });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 exports.deleteNews = async (req, res) => {
   try {
