@@ -138,18 +138,21 @@ exports.createUserRole = async (req, res) => {
 };
 exports.loginWithUserRole = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phone_Number, email } = req.body;
 
-    // Validate email and password
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
+    let query = {};
+    if (phone_Number) {
+      query.phone_Number = phone_Number;
+    }
+    if (email) {
+      query.email = email;
     }
 
-    // Find the user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOneAndUpdate(
+      query,
+      { last_logged_in: new Date() },
+      { new: true }
+    );
 
     if (!user) {
       return res
@@ -157,43 +160,7 @@ exports.loginWithUserRole = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Validate password (assuming you have a method like `comparePassword` in your User model)
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid password" });
-    }
-
-    // Update last logged in time
-    user.last_logged_in = new Date();
-    await user.save();
-
-    // Create a JWT token with the user's role
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    // Set the token in a cookie
-    res.setHeader(
-      "Set-Cookie",
-      cookie.serialize("authToken", token, {
-        httpOnly: true, // Prevent client-side JavaScript from accessing the cookie
-        secure: process.env.NODE_ENV === "production", // Ensure cookies are only sent over HTTPS in production
-        maxAge: 3600, // 1 hour
-        sameSite: "strict", // Prevent CSRF attacks
-        path: "/", // Make the cookie available across the entire site
-      })
-    );
-
-    // Send the response
-    res.status(200).json({
-      success: true,
-      data: user,
-      token, // Optionally send the token in the response
-    });
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
