@@ -58,6 +58,31 @@ const newsSchema = new mongoose.Schema({
       timestamp: { type: Date, default: Date.now },
     },
   ],
+  hindi: {
+    title: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
+  },
+  kannada: {
+    title: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
+  },
+
+  English: {
+    title: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
+  },
 });
 
 module.exports = mongoose.model("News", newsSchema);

@@ -43,7 +43,68 @@ exports.createNews = async (req, res) => {
       }
     }
 
-    const news = new News({ ...newsData, category, tags });
+    // Translate the title and description into Hindi, Kannada, and English
+    const [hindiTitleRes, hindiDescriptionRes] = await translate.translate(
+      [newsData.title, newsData.description],
+      "hi"
+    );
+    const [kannadaTitleRes, kannadaDescriptionRes] = await translate.translate(
+      [newsData.title, newsData.description],
+      "kn"
+    );
+    const [englishTitleRes, englishDescriptionRes] = await translate.translate(
+      [newsData.title, newsData.description],
+      "en"
+    );
+
+    console.log("Hindi Title Response:", hindiTitleRes);
+    console.log("Hindi Description Response:", hindiDescriptionRes);
+    console.log("Kannada Title Response:", kannadaTitleRes);
+    console.log("Kannada Description Response:", kannadaDescriptionRes);
+    console.log("English Title Response:", englishTitleRes);
+    console.log("English Description Response:", englishDescriptionRes);
+
+    const hindiTitle =
+      hindiTitleRes && hindiTitleRes[0] ? hindiTitleRes[0] : "";
+    const hindiDescription =
+      hindiTitleRes && hindiTitleRes[1] ? hindiTitleRes[1] : "";
+
+    const kannadaTitle =
+      kannadaTitleRes && kannadaTitleRes[0] ? kannadaTitleRes[0] : "";
+    const kannadaDescription =
+      kannadaTitleRes && kannadaTitleRes[1] ? kannadaTitleRes[1] : "";
+    const englishTitle =
+      englishTitleRes && englishTitleRes[0] ? englishTitleRes[0] : "";
+    const englishDescription =
+      englishTitleRes && englishTitleRes[1] ? englishTitleRes[1] : "";
+
+    console.log("Final Translations: ", {
+      hindiTitle,
+      hindiDescription,
+      kannadaTitle,
+      kannadaDescription,
+      englishTitle,
+      englishDescription,
+    });
+
+    const news = new News({
+      ...newsData,
+      category,
+      tags,
+      hindi: {
+        title: hindiTitle,
+        description: hindiDescription,
+      },
+      kannada: {
+        title: kannadaTitle,
+        description: kannadaDescription,
+      },
+      English: {
+        title: englishTitle,
+        description: englishDescription,
+      },
+    });
+
     const savedNews = await news.save();
     res.status(201).json({ success: true, data: savedNews });
   } catch (error) {
@@ -51,6 +112,51 @@ exports.createNews = async (req, res) => {
   }
 };
 
+exports.translateNews = async (req, res) => {
+  try {
+    const { id, targetLang } = req.params;
+
+    if (!["en", "kn", "hi"].includes(targetLang)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid language code. Use 'en' for English, 'kn' for Kannada, or 'hi' for Hindi.",
+      });
+    }
+
+    const news = await News.findById(id);
+    if (!news) {
+      return res
+        .status(404)
+        .json({ success: false, message: "News not found" });
+    }
+
+    let translatedTitle = news.title;
+    let translatedDescription = news.description;
+
+    if (targetLang === "hi") {
+      translatedTitle = news.hindi.title;
+      translatedDescription = news.hindi.description;
+    } else if (targetLang === "kn") {
+      translatedTitle = news.kannada.title;
+      translatedDescription = news.kannada.description;
+    } else if (targetLang === "en") {
+      translatedTitle = news.English.title;
+      translatedDescription = news.English.description;
+    }
+
+    res.status(200).json({
+      success: true,
+      original: { title: news.title, description: news.description },
+      translated: {
+        title: translatedTitle,
+        description: translatedDescription,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 exports.getAllNews = async (req, res) => {
   try {
     const newsList = await News.find()
@@ -188,43 +294,6 @@ exports.recommendCategory = async (req, res) => {
       success: true,
       data: recommendedNews,
       recommendedCategory: topCategory.name,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-exports.translateNews = async (req, res) => {
-  try {
-    const { id, targetLang } = req.params;
-
-    if (!["en", "kn"].includes(targetLang)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid language code. Use 'en' for English or 'kn' for Kannada.",
-      });
-    }
-
-    const news = await News.findById(id);
-    if (!news) {
-      return res
-        .status(404)
-        .json({ success: false, message: "News not found" });
-    }
-
-    const [translatedTitle] = await translate.translate(news.title, targetLang);
-    const [translatedDescription] = await translate.translate(
-      news.description,
-      targetLang
-    );
-
-    res.status(200).json({
-      success: true,
-      original: { title: news.title, description: news.description },
-      translated: {
-        title: translatedTitle,
-        description: translatedDescription,
-      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
