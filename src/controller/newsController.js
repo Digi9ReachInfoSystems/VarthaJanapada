@@ -189,7 +189,6 @@ exports.getNewsById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 exports.updateNews = async (req, res) => {
   try {
     const { category, tags, hindi, kannada, English, ...updateData } = req.body;
@@ -217,7 +216,9 @@ exports.updateNews = async (req, res) => {
     // Validate language fields (Hindi, Kannada, English)
     const news = await News.findById(req.params.id);
     if (!news) {
-      return res.status(404).json({ success: false, message: "News not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "News not found" });
     }
 
     // Update Hindi, Kannada, and English titles and descriptions if they are provided
@@ -231,6 +232,9 @@ exports.updateNews = async (req, res) => {
       news.English = { ...news.English, ...English };
     }
 
+    // Ensure the `isLive` field is always updated to `true`
+    news.isLive = true;
+
     // Update the remaining fields like category, tags, etc.
     const updatedNews = await News.findByIdAndUpdate(
       req.params.id,
@@ -241,6 +245,7 @@ exports.updateNews = async (req, res) => {
         hindi: news.hindi,
         kannada: news.kannada,
         English: news.English,
+        isLive: news.isLive, // Ensure isLive is updated
       },
       { new: true }
     )
@@ -258,7 +263,6 @@ exports.updateNews = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 exports.deleteNews = async (req, res) => {
   try {
