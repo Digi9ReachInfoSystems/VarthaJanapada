@@ -5,6 +5,11 @@ const newsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  isLive: {
+    type: Boolean,
+    default: false,
+  },
+
   description: {
     type: String,
     required: true,
