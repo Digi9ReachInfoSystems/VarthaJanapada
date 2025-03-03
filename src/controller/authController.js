@@ -148,11 +148,7 @@ exports.loginWithUserRole = async (req, res) => {
       query.email = email;
     }
 
-    const user = await User.findOneAndUpdate(
-      query,
-      { last_logged_in: new Date() },
-      { new: true }
-    );
+    const user = await User.findOne(query);
 
     if (!user) {
       return res
@@ -160,12 +156,28 @@ exports.loginWithUserRole = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    res.status(200).json({ success: true, data: user });
+    // Create the JWT token with role
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role, // Include the role in the token
+      },
+      process.env.JWT_SECRET, // Make sure to store this secret safely
+      { expiresIn: "1h" }
+    );
+
+    // Send the token in the response
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: user,
+      token, // Send the token to the client
+    });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-
 exports.createUserWithRole = async (req, res) => {
   try {
     const { phone_Number, displayName, profileImage, email, role } = req.body;
@@ -189,10 +201,23 @@ exports.createUserWithRole = async (req, res) => {
       role, // Assign role to the user
     });
 
-    // Return the user data along with success status
+    // Create the JWT token with the user details and role
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role, // Include the role in the token
+      },
+      process.env.JWT_SECRET, // Make sure to store this secret safely in your environment variables
+      { expiresIn: "1h" } // Set the expiration time for the token
+    );
+
+    // Return the user data along with success status and token
     res.status(201).json({
       success: true,
+      message: "User created successfully",
       data: user,
+      token, // Send the token to the client
     });
   } catch (error) {
     // Handle errors (e.g., missing fields, validation errors)
