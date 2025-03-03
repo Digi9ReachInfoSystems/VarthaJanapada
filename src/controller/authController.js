@@ -165,3 +165,40 @@ exports.loginWithUserRole = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
+exports.createUserWithRole = async (req, res) => {
+  try {
+    const { phone_Number, displayName, profileImage, email, role } = req.body;
+
+    // Validate the role (Optional: You can add more validation for roles)
+    const validRoles = ["admin", "moderator", "content"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid role. Available roles are admin, moderator, and content.",
+      });
+    }
+
+    // Create a new user with the provided role
+    const user = await User.create({
+      phone_Number,
+      displayName,
+      email,
+      profileImage,
+      role, // Assign role to the user
+    });
+
+    // Return the user data along with success status
+    res.status(201).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    // Handle errors (e.g., missing fields, validation errors)
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
