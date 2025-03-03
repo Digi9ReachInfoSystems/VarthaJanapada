@@ -136,26 +136,38 @@ exports.createUserRole = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
-
 exports.loginWithUserRole = async (req, res) => {
   try {
-    const { phone_Number, email } = req.body;
+    const { email, password } = req.body;
 
-    let query = {};
-    if (phone_Number) query.phone_Number = phone_Number;
-    if (email) query.email = email;
+    // Validate email and password
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
 
-    const user = await User.findOneAndUpdate(
-      query,
-      { last_logged_in: new Date() },
-      { new: true }
-    );
+    // Find the user by email
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+
+    // Validate password (assuming you have a method like `comparePassword` in your User model)
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid password" });
+    }
+
+    // Update last logged in time
+    user.last_logged_in = new Date();
+    await user.save();
 
     // Create a JWT token with the user's role
     const token = jwt.sign(
@@ -176,7 +188,12 @@ exports.loginWithUserRole = async (req, res) => {
       })
     );
 
-    res.status(200).json({ success: true, data: user });
+    // Send the response
+    res.status(200).json({
+      success: true,
+      data: user,
+      token, // Optionally send the token in the response
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
