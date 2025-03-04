@@ -1,10 +1,68 @@
 const Magazine = require("../models/magazineModel"); // Capital 'M' for model
 const { search } = require("../routes/newsRoutes");
+const { Translate } = require("@google-cloud/translate").v2;
 
+const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
+if (!base64Key) {
+  throw new Error(
+    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
+  );
+}
+const credentials = JSON.parse(
+  Buffer.from(base64Key, "base64").toString("utf-8")
+);
+
+const translate = new Translate({ credentials });
 const createMagazine = async (req, res) => {
   try {
-    const newMagazine = new Magazine(req.body); // Use 'Magazine' (model)
+    const { title, description } = req.body;
+
+    // Define the target languages for translation
+    const targetLanguages = ["en", "kn", "hi"]; // English, Kannada, Hindi
+
+    // Translate the title and description into multiple languages
+    const translationPromises = targetLanguages.map(async (lang) => {
+      const titleTranslation = await translate.translate(title, lang);
+      const descriptionTranslation = await translate.translate(
+        description,
+        lang
+      );
+
+      return {
+        language: lang,
+        title: titleTranslation[0], // Translation result for title
+        description: descriptionTranslation[0], // Translation result for description
+      };
+    });
+
+    // Wait for all translations to complete
+    const translations = await Promise.all(translationPromises);
+
+    // Prepare the translated data for the new magazine
+    const newMagazine = new Magazine({
+      title, // Original title
+      description, // Original description
+      english: {
+        title: translations.find((t) => t.language === "en").title,
+        description: translations.find((t) => t.language === "en").description,
+      },
+      kannada: {
+        title: translations.find((t) => t.language === "kn").title,
+        description: translations.find((t) => t.language === "kn").description,
+      },
+      hindi: {
+        title: translations.find((t) => t.language === "hi").title,
+        description: translations.find((t) => t.language === "hi").description,
+      },
+      magazineThumbnail: req.body.magazineThumbnail,
+      magazinePdf: req.body.magazinePdf,
+      editionNumber: req.body.editionNumber,
+      last_updated: new Date(),
+    });
+
+    // Save the new magazine to the database
     const savedMagazine = await newMagazine.save();
+
     res.status(201).json({ success: true, data: savedMagazine });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });

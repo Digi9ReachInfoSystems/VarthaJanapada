@@ -4,6 +4,18 @@ const LongVideoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  hindi: {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+  },
+  kannada: {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+  },
+  english: {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+  },
   likedBy: [
     {
       type: mongoose.Schema.Types.ObjectId,

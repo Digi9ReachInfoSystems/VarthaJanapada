@@ -1,6 +1,20 @@
 const Videos = require("../models/videoModel");
 const Comment = require("../models/commentsModel");
 
+const { Translate } = require("@google-cloud/translate").v2;
+
+const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
+if (!base64Key) {
+  throw new Error(
+    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
+  );
+}
+const credentials = JSON.parse(
+  Buffer.from(base64Key, "base64").toString("utf-8")
+);
+
+const translate = new Translate({ credentials });
+
 exports.uploadVideo = async (req, res) => {
   try {
     const video = new Videos(req.body);
