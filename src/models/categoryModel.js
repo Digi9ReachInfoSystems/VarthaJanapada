@@ -6,6 +6,15 @@ const categorySchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  hindi: {
+    type: String,
+  },
+  kannada: {
+    type: String,
+  },
+  English: {
+    type: String,
+  },
   description: {
     type: String,
   },

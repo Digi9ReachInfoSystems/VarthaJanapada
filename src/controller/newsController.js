@@ -8,18 +8,8 @@ const util = require("util");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
 
-const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
-if (!base64Key) {
-  throw new Error(
-    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
-  );
-}
-const credentials = JSON.parse(
-  Buffer.from(base64Key, "base64").toString("utf-8")
-);
 
-const translate = new Translate({ credentials });
-const ttsClient = new textToSpeech.TextToSpeechClient({ credentials });
+
 
 exports.createNews = async (req, res) => {
   try {

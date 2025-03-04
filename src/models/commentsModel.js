@@ -29,6 +29,9 @@ const commentSchema = new mongoose.Schema({
   last_updated: {
     type: Date,
   },
+  hindi:{
+    
+  }
 });
 
 module.exports = mongoose.model("Comment", commentSchema);
