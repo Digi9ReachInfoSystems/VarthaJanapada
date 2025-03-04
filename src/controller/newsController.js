@@ -417,10 +417,10 @@ exports.deleteComment = async (req, res) => {
 
 exports.getLatestNews = async (req, res) => {
   try {
-    const latestNews = await News.find({isLive: true})
+    const latestNews = await News.find({ isLive: true })
       .sort({ createdTime: -1 }) // Sort by newest first
       .limit(10) // Get only the latest 10 news articles
-      .populate("category", "name") // Populate category name
+      .populate("category") // Populate category name
       .populate("tags", "name"); // Populate tags name
 
     res.status(200).json({ success: true, data: latestNews });
