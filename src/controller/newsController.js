@@ -8,6 +8,18 @@ const util = require("util");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
 
+const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
+if (!base64Key) {
+  throw new Error(
+    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
+  );
+}
+const credentials = JSON.parse(
+  Buffer.from(base64Key, "base64").toString("utf-8")
+);
+
+const translate = new Translate({ credentials });
+
 exports.createNews = async (req, res) => {
   try {
     const { category, tags, ...newsData } = req.body;
@@ -148,7 +160,7 @@ exports.getAllNews = async (req, res) => {
   try {
     const newsList = await News.find()
       .sort({ createdTime: -1 })
-      .populate("category", "name", "hindi", "kannada")
+      .populate("category")
       .populate("tags", "name");
 
     res.status(200).json({ success: true, data: newsList });
@@ -159,7 +171,7 @@ exports.getAllNews = async (req, res) => {
 exports.getNewsById = async (req, res) => {
   try {
     const news = await News.findById(req.params.id)
-      .populate("category", "name", "hindi", "kannada")
+      .populate("Category", "name", "hindi", "kannada")
       .populate("tags", "name")
       .populate({
         path: "comments", // Populate the comments field
