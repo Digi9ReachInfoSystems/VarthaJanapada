@@ -16,7 +16,7 @@ router.delete(
   "/deleteComment/:commentId/:userId",
   newsController.deleteComment
 );
-router.get("/search/:query", newsController.searchNews);A
+router.get("/search/:query", newsController.searchNews);
 router.get("/categories/:category", newsController.getNewsByCategory);
 
 module.exports = router;
