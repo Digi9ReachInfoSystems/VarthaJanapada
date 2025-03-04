@@ -8,9 +8,6 @@ const util = require("util");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
 
-
-
-
 exports.createNews = async (req, res) => {
   try {
     const { category, tags, ...newsData } = req.body;
@@ -151,7 +148,7 @@ exports.getAllNews = async (req, res) => {
   try {
     const newsList = await News.find()
       .sort({ createdTime: -1 })
-      .populate("category", "name")
+      .populate("category", "name", "hindi", "kannada")
       .populate("tags", "name");
 
     res.status(200).json({ success: true, data: newsList });
@@ -162,7 +159,7 @@ exports.getAllNews = async (req, res) => {
 exports.getNewsById = async (req, res) => {
   try {
     const news = await News.findById(req.params.id)
-      .populate("category", "name")
+      .populate("category", "name", "hindi", "kannada")
       .populate("tags", "name")
       .populate({
         path: "comments", // Populate the comments field
