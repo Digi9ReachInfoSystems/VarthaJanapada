@@ -6,16 +6,16 @@ const videoSchema = new mongoose.Schema({
     required: true,
   },
   hindi: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String },
+    description: { type: String },
   },
   kannada: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String },
+    description: { type: String },
   },
   english: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String },
+    description: { type: String },
   },
   likedBy: [
     {
