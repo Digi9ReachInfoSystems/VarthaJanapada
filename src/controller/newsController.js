@@ -158,7 +158,7 @@ exports.translateNews = async (req, res) => {
 };
 exports.getAllNews = async (req, res) => {
   try {
-    const newsList = await News.find()
+    const newsList = await News.find({ isLive: true })
       .sort({ createdTime: -1 })
       .populate("category")
       .populate("tags", "name");
