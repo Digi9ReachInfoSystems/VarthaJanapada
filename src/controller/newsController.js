@@ -171,7 +171,7 @@ exports.getAllNews = async (req, res) => {
 exports.getNewsById = async (req, res) => {
   try {
     const news = await News.findById(req.params.id)
-      .populate("Category", "name", "hindi", "kannada")
+      .populate("category")
       .populate("tags", "name")
       .populate({
         path: "comments", // Populate the comments field
