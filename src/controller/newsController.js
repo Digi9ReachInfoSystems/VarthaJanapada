@@ -281,7 +281,7 @@ exports.deleteNews = async (req, res) => {
 
 exports.recommendCategory = async (req, res) => {
   try {
-    const userId = req.user.id; // Assuming user is authenticated and userId is available
+    const userId = req.user.id;
 
     // Fetch the user's clicked news
     const user = await User.findById(userId).populate("clickedNews.newsId");
@@ -291,19 +291,16 @@ exports.recommendCategory = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Gather categories of the clicked news
     const categoryCount = {};
     user.clickedNews.forEach((clickedItem) => {
       const categoryId = clickedItem.newsId.category._id.toString();
       categoryCount[categoryId] = (categoryCount[categoryId] || 0) + 1;
     });
 
-    // Sort categories by frequency
     const sortedCategoryIds = Object.keys(categoryCount).sort(
       (a, b) => categoryCount[b] - categoryCount[a]
     );
 
-    // Fetch the top category
     const topCategoryId = sortedCategoryIds[0];
     const topCategory = await Category.findById(topCategoryId);
 
@@ -313,7 +310,6 @@ exports.recommendCategory = async (req, res) => {
         .json({ success: false, message: "Category not found" });
     }
 
-    // Find news articles from the top category
     const recommendedNews = await News.find({ category: topCategoryId })
       .sort({ createdTime: -1 })
       .limit(5)
@@ -340,7 +336,6 @@ exports.searchNews = async (req, res) => {
       });
     }
 
-    // Perform a case-insensitive search using regex
     const newsList = await News.find({
       title: { $regex: query, $options: "i" },
     })
@@ -372,7 +367,6 @@ exports.addComment = async (req, res) => {
       });
     }
 
-    // Create new comment
     const newComment = new Comment({
       user: userId,
       news: newsId,
