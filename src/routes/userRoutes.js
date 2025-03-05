@@ -3,12 +3,14 @@ const router = express.Router();
 const userController = require("../controller/userController");
 
 // Route to get all users
+router.get("/getMonthlyUser", userController.getMonthlyUserCreationData);
 router.get("/total-users", userController.getTotalUsers);
 router.get("/users", userController.getAllUsers);
 router.get("/new-users", userController.getNewUsersCount);
 
 // Route to get a specific user by ID
 router.get("/users/:id", userController.getUserById);
+// router.get("/user/recent", userController.recentUser);
 
 // Route to delete a user
 router.delete("/users/:id", userController.deleteUser);
@@ -18,7 +20,6 @@ router.post("/track-news-click", userController.trackNewsClick);
 
 router.post("/login-on-web", userController.loginOnWeb);
 router.post("/logout", userController.logout);
-
 
 // Route to recommend news category based on the user's interactions
 router.get("/recommendations/:userId", userController.recommendCategory);

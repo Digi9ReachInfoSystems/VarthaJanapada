@@ -434,3 +434,49 @@ exports.logout = (req, res) => {
 
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
+
+exports.getMonthlyUserCreationData = async (req, res) => {
+  try {
+    const { year, month } = req.query; // Get year and month from query params
+
+    // Validate year and month
+    if (!year || !month) {
+      return res.status(400).json({
+        success: false,
+        message: "Year and month are required in query parameters",
+      });
+    }
+
+    // Create start and end dates for the specified month
+    const startDate = new Date(year, month - 1, 1); // Month is 0-indexed in JavaScript
+    const endDate = new Date(year, month, 1); // Start of the next month
+
+    // Aggregate users by createdTime
+    const userCreationData = await User.aggregate([
+      {
+        $match: {
+          createdTime: { $gte: startDate, $lt: endDate }, // Filter users created in the specified month
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdTime" } }, // Group by date
+          count: { $sum: 1 }, // Count users for each date
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by date in ascending order
+      },
+    ]);
+
+    // Format the data for the frontend
+    const formattedData = userCreationData.map((entry) => ({
+      date: entry._id,
+      count: entry.count,
+    }));
+
+    res.status(200).json({ success: true, data: formattedData });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

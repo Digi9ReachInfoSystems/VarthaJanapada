@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   displayName: {
     type: String,
     required: true,
-  },
+  }, 
   createdTime: {
     type: Date,
     default: Date.now,

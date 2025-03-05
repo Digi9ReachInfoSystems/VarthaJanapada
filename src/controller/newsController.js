@@ -2,7 +2,7 @@ const News = require("../models/newsModel");
 const Category = require("../models/categoryModel");
 const Tags = require("../models/tagsModel");
 const { Translate } = require("@google-cloud/translate").v2;
-const textToSpeech = require("@google-cloud/text-to-speech"); // Import TTS
+const textToSpeech = require("@google-cloud/text-to-speech");
 const fs = require("fs");
 const util = require("util");
 const Comment = require("../models/commentsModel");
@@ -24,7 +24,7 @@ exports.createNews = async (req, res) => {
   try {
     const { category, tags, ...newsData } = req.body;
 
-    // Validate category existence
+    
     const categoryExists = await Category.findById(category);
     if (!categoryExists) {
       return res
