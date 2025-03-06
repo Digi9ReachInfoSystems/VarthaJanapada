@@ -6,6 +6,7 @@ const videoController = require("../controller/videoController");
 router.post("/upload", videoController.uploadVideo);
 
 // Route to get all videos
+router.get("/mostLikedVideo", videoController.getMostLikedVideo);
 router.get("/", videoController.getAllVideos);
 router.get("/total-Videos", videoController.getTotalNumberOfVideos);
 // Route to get a video by its ID

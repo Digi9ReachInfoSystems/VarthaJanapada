@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "moderator", "content"],
     default: "content",
   },
+  
 
   displayName: {
     type: String,

@@ -196,3 +196,29 @@ exports.getTotalNumberOfVideos = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+exports.getMostLikedVideo = async (req, res) => {
+  try {
+    // Find the video with the highest number of likes
+    const mostLikedVideo = await Videos.findOne().sort({ total_likes: -1 });
+
+    // Check if a video was found
+    if (!mostLikedVideo) {
+      return res.status(404).json({
+        success: false,
+        message: "No videos found",
+      });
+    }
+
+    // Return the most liked video
+    res.status(200).json({
+      success: true,
+      data: mostLikedVideo,
+    });
+  } catch (error) {
+    console.error("Error fetching most liked video:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
