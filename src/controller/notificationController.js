@@ -39,8 +39,16 @@ exports.createNotification = async (req, res) => {
     }
 
     // Extract FCM tokens and user IDs
-    const fcmTokens = users.map((user) => user.fcmToken);
+    const fcmTokens = users.map((user) => user.fcmToken).filter(Boolean); // Filter out any invalid (null or empty) tokens
     const userIds = users.map((user) => user._id);
+
+    // Ensure there are valid tokens before proceeding
+    if (fcmTokens.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid FCM tokens found for users",
+      });
+    }
 
     // Send message to all FCM tokens (one for each user)
     const messages = fcmTokens.map((token) => ({
@@ -53,7 +61,11 @@ exports.createNotification = async (req, res) => {
 
     // Send all notifications via Firebase Cloud Messaging
     await Promise.all(
-      messages.map((message) => admin.messaging().send(message))
+      messages.map((message) => {
+        if (message.token) {
+          return admin.messaging().send(message); // Only send if there's a valid token
+        }
+      })
     );
 
     // Create the notification document (optional, includes user IDs)
