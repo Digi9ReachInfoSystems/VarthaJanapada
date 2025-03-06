@@ -22,13 +22,14 @@ const notificationSchema = new mongoose.Schema({
   last_updated: {
     type: Date,
   },
-  fcm_token: {
-    type: String,
-    required: [true, "A notification must have a fcm token"],
-  },
+  fcm_token: [
+    {
+      type: String,
+      required: [true, "A notification must have a fcm token"],
+    },
+  ],
   type: {
     type: String,
-    required: [true, "A notification must have a type"],
   },
   read: {
     type: Boolean,
