@@ -13,6 +13,7 @@ const videoRoutes = require("./src/routes/videoRoutes");
 const magazine = require("./src/routes/magazineRoutes");
 const longVideo = require("./src/routes/longVideoRoutes");
 const sessionRoutes = require("./src/routes/sessionRoutes");
+const visitorRoutes = require("./src/routes/visitorRoutes");
 dotenv.config();
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/video", videoRoutes);
 app.use("/api/magazine", magazine);
 app.use("/api/longVideo", longVideo);
 app.use("/sessions", sessionRoutes);
+app.use("/visitors", visitorRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
