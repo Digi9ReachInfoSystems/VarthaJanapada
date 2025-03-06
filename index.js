@@ -19,7 +19,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: "http://localhost:5174", // Allow only requests from this origin
+  origin: "http://localhost:5173", // Allow only requests from this origin
   credentials: true, // Allow credentials (cookies, headers)
 };
 
