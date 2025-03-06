@@ -26,37 +26,51 @@ exports.updateFcmToken = async (req, res) => {
     });
   }
 };
-
 exports.createNotification = async (req, res) => {
   try {
-    const { title, description, userId, fcm_token, type } = req.body;
+    const { title, description } = req.body;
 
-    // Create the notification document
+    // Fetch all users and their FCM tokens
+    const users = await User.find();
+    if (users.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No users found" });
+    }
+
+    // Extract FCM tokens and user IDs
+    const fcmTokens = users.map((user) => user.fcmToken);
+    const userIds = users.map((user) => user._id);
+
+    // Send message to all FCM tokens (one for each user)
+    const messages = fcmTokens.map((token) => ({
+      notification: {
+        title,
+        body: description,
+      },
+      token,
+    }));
+
+    // Send all notifications via Firebase Cloud Messaging
+    await Promise.all(
+      messages.map((message) => admin.messaging().send(message))
+    );
+
+    // Create the notification document (optional, includes user IDs)
     const notification = new Notification({
       title,
       description,
-      userId,
-      fcm_token,
-      type,
+      userId: userIds, // List of user IDs to whom the notification was sent
+      fcm_token: "", // Not needed here, we are sending to multiple tokens
+      type: "general", // Adjust as needed
     });
 
     await notification.save();
 
-    const message = {
-      notification: {
-        title: title,
-        body: description,
-      },
-      token: fcm_token, // FCM token for the specific user
-    };
-
-    // Send message via Firebase Cloud Messaging
-    await admin.messaging().send(message);
-
-    // Send a success response
-    res
-      .status(200)
-      .json({ success: true, message: "Notification sent successfully!" });
+    res.status(200).json({
+      success: true,
+      message: "Notification sent successfully!",
+    });
   } catch (error) {
     console.error("Error sending notification:", error);
     res.status(500).json({

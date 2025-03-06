@@ -13,12 +13,11 @@ const notificationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
-  userId: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-  ],
+  userId: {
+    type: [mongoose.Schema.Types.ObjectId], // Array of user IDs
+    ref: "User",
+    required: true,
+  },
   last_updated: {
     type: Date,
   },
