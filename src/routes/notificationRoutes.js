@@ -5,7 +5,7 @@ const notificationController = require("../controller/notificationController");
 router.post("/createNotification", notificationController.createNotification);
 router.get("/", notificationController.getAllNotifications);
 // router.delete("/:id", notificationController.deleteNotification);
-router.post(
+router.put(
   "/users/:userId/update-fcm-token",
   notificationController.updateFcmToken
 );
