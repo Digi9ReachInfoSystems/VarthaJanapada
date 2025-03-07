@@ -12,3 +12,4 @@ router.get("/total", visitorController.getTotalVisitors);
 router.get("/peak-time", visitorController.getPeakTimeAverage);
 
 module.exports = router;
+    
