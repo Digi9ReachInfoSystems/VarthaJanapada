@@ -20,6 +20,12 @@ const magazineSchema = new mongoose.Schema({
   magazineThumbnail: { type: String },
   magazinePdf: { type: String },
   editionNumber: { type: Number },
+  publishedMonth: {
+    type: String,
+  },
+  publishedYear: {
+    type: String,
+  },
 });
 
 module.exports = mongoose.model("Magazine", magazineSchema);

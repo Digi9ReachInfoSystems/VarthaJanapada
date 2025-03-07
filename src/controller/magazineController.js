@@ -68,10 +68,25 @@ const createMagazine = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
-
 const getMagazines = async (req, res) => {
   try {
-    const magazines = await Magazine.find(); // Use 'Magazine'
+    const { publishedYear, publishedMonth } = req.query; // Extract query parameters
+
+    // Build the filter object based on provided query parameters
+    const filter = {};
+
+    // Add conditions to the filter object if they exist in the query parameters
+    if (publishedYear) {
+      filter.publishedYear = publishedYear;
+    }
+
+    if (publishedMonth) {
+      filter.publishedMonth = publishedMonth;
+    }
+
+    // Find magazines based on the filter object
+    const magazines = await Magazine.find(filter);
+
     res.status(200).json({ success: true, data: magazines });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });

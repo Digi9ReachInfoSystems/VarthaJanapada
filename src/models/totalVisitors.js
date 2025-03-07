@@ -11,7 +11,6 @@ const totalVisitSchema = new mongoose.Schema({
   },
 });
 
-// Create the model for 'totalVistor' (ensure proper naming convention for the model)
 const TotalVisitor = mongoose.model("TotalVisitor", totalVisitSchema);
 
 module.exports = TotalVisitor;
