@@ -21,7 +21,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: "https://dipr.vercel.app/", // Allow only requests from this origin
+  origin: "https://dipr.vercel.app", // Allow only requests from this origin
   credentials: true, // Allow credentials (cookies, headers)
 };
 
