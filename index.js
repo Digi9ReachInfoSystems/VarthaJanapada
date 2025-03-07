@@ -15,13 +15,14 @@ const longVideo = require("./src/routes/longVideoRoutes");
 const sessionRoutes = require("./src/routes/sessionRoutes");
 const visitorRoutes = require("./src/routes/visitorRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
+const magazineRoutes2 = require("./src/routes/magazineRoutes2");
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: "https://dipr.vercel.app", // Allow only requests from this origin
+  origin: "https://dipr.vercel.app",
   credentials: true, // Allow credentials (cookies, headers)
 };
 
@@ -41,6 +42,7 @@ app.use("/api/longVideo", longVideo);
 app.use("/sessions", sessionRoutes);
 app.use("/visitors", visitorRoutes);
 app.use("/notifications", notificationRoutes);
+app.use("/api/magazine2", magazineRoutes2);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
