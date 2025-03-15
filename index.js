@@ -22,8 +22,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: "https://dipr.vercel.app",
-  credentials: true, // Allow credentials (cookies, headers)
+  origin: [
+    "https://dipr.vercel.app",
+    "http://localhost:5173" // Add your second domain here
+  ],
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
