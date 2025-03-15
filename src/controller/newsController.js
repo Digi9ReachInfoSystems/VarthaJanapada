@@ -2,16 +2,12 @@ const News = require("../models/newsModel");
 const Category = require("../models/categoryModel");
 const Tags = require("../models/tagsModel");
 const { Translate } = require("@google-cloud/translate").v2;
-const textToSpeech = require("@google-cloud/text-to-speech");
+const textToSpeech = require("@google-cloud/text-to-speech"); // Import TTS
 const fs = require("fs");
-const { Storage } = require("@google-cloud/storage");
-const admin = require("firebase-admin");
-const axios = require("axios"); // Add axios for HTTP requests
 const util = require("util");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
-const textToSpeechClient = new textToSpeech.TextToSpeechClient();
-const storage = new Storage();
+
 const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
 if (!base64Key) {
   throw new Error(
@@ -24,47 +20,11 @@ const credentials = JSON.parse(
 
 const translate = new Translate({ credentials });
 
-async function uploadToFirebase(filePath, fileName) {
-  const bucket = admin.storage().bucket();
-  const file = bucket.file(fileName);
-  await file.save(fs.readFileSync(filePath));
-  const fileUrl = `gs://${bucket.name}/${file.name}`;
-  return fileUrl;
-}
-async function textToAudioFile(text, languageCode) {
-  try {
-    const apiKey = process.env.GOOGLE_CLOUD_API_KEY; // Use an API key
-    if (!apiKey) throw new Error("GOOGLE_CLOUD_API_KEY not set");
-
-    const response = await axios.post(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
-      {
-        input: { text },
-        voice: {
-          languageCode: "hi-IN",
-          name: "hi-IN-Standard-A", // Add this line
-          ssmlGender: "NEUTRAL",
-        },
-        audioConfig: {
-          audioEncoding: "MP3",
-        },
-      }
-    );
-
-    const audioBuffer = Buffer.from(response.data.audioContent, "base64");
-
-    const filePath = path.join(__dirname, `./temp_audio_${languageCode}.mp3`);
-    fs.writeFileSync(filePath, audioBuffer);
-
-    return filePath;
-  } catch (error) {
-    throw new Error(`Text-to-Speech API failed: ${error.message}`);
-  }
-}
 exports.createNews = async (req, res) => {
   try {
     const { category, tags, ...newsData } = req.body;
 
+    // Validate category existence
     const categoryExists = await Category.findById(category);
     if (!categoryExists) {
       return res
@@ -96,16 +56,36 @@ exports.createNews = async (req, res) => {
       "en"
     );
 
-    const hindiTitle = hindiTitleRes[0];
-    const hindiDescription = hindiDescriptionRes[1];
-    const kannadaTitle = kannadaTitleRes[0];
-    const kannadaDescription = kannadaDescriptionRes[1];
-    const englishTitle = englishTitleRes[0];
-    const englishDescription = englishDescriptionRes[1];
+    console.log("Hindi Title Response:", hindiTitleRes);
+    console.log("Hindi Description Response:", hindiDescriptionRes);
+    console.log("Kannada Title Response:", kannadaTitleRes);
+    console.log("Kannada Description Response:", kannadaDescriptionRes);
+    console.log("English Title Response:", englishTitleRes);
+    console.log("English Description Response:", englishDescriptionRes);
 
-    // Convert translated descriptions to audio files and upload to Firebase
+    const hindiTitle =
+      hindiTitleRes && hindiTitleRes[0] ? hindiTitleRes[0] : "";
+    const hindiDescription =
+      hindiTitleRes && hindiTitleRes[1] ? hindiTitleRes[1] : "";
 
-    // Create news document and save to the database
+    const kannadaTitle =
+      kannadaTitleRes && kannadaTitleRes[0] ? kannadaTitleRes[0] : "";
+    const kannadaDescription =
+      kannadaTitleRes && kannadaTitleRes[1] ? kannadaTitleRes[1] : "";
+    const englishTitle =
+      englishTitleRes && englishTitleRes[0] ? englishTitleRes[0] : "";
+    const englishDescription =
+      englishTitleRes && englishTitleRes[1] ? englishTitleRes[1] : "";
+
+    console.log("Final Translations: ", {
+      hindiTitle,
+      hindiDescription,
+      kannadaTitle,
+      kannadaDescription,
+      englishTitle,
+      englishDescription,
+    });
+
     const news = new News({
       ...newsData,
       category,
@@ -130,6 +110,7 @@ exports.createNews = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.translateNews = async (req, res) => {
   try {
     const { id, targetLang } = req.params;
