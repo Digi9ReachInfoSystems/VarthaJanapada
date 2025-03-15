@@ -104,28 +104,6 @@ exports.createNews = async (req, res) => {
     const englishDescription = englishDescriptionRes[1];
 
     // Convert translated descriptions to audio files and upload to Firebase
-    const hindiAudioFilePath = await textToAudioFile(hindiDescription, "hi-IN");
-    const kannadaAudioFilePath = await textToAudioFile(
-      kannadaDescription,
-      "kn-IN"
-    );
-    const englishAudioFilePath = await textToAudioFile(
-      englishDescription,
-      "en-US"
-    );
-
-    const hindiAudioUrl = await uploadToFirebase(
-      hindiAudioFilePath,
-      `news_audio/hindi_${Date.now()}.mp3`
-    );
-    const kannadaAudioUrl = await uploadToFirebase(
-      kannadaAudioFilePath,
-      `news_audio/kannada_${Date.now()}.mp3`
-    );
-    const englishAudioUrl = await uploadToFirebase(
-      englishAudioFilePath,
-      `news_audio/english_${Date.now()}.mp3`
-    );
 
     // Create news document and save to the database
     const news = new News({
@@ -135,17 +113,14 @@ exports.createNews = async (req, res) => {
       hindi: {
         title: hindiTitle,
         description: hindiDescription,
-        audio_description: hindiAudioUrl,
       },
       kannada: {
         title: kannadaTitle,
         description: kannadaDescription,
-        audio_description: kannadaAudioUrl,
       },
       English: {
         title: englishTitle,
         description: englishDescription,
-        audio_description: englishAudioUrl,
       },
     });
 
