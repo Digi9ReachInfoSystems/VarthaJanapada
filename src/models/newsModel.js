@@ -32,6 +32,7 @@ const newsSchema = new mongoose.Schema({
   author: {
     type: String,
   },
+
   tags: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -70,12 +71,18 @@ const newsSchema = new mongoose.Schema({
     description: {
       type: String,
     },
+    audio_description: {
+      type: String,
+    },
   },
   kannada: {
     title: {
       type: String,
     },
     description: {
+      type: String,
+    },
+    audio_description: {
       type: String,
     },
   },
@@ -85,6 +92,9 @@ const newsSchema = new mongoose.Schema({
       type: String,
     },
     description: {
+      type: String,
+    },
+    audio_description: {
       type: String,
     },
   },
