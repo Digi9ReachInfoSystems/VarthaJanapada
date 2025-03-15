@@ -19,7 +19,7 @@ const magazineSchema2 = new mongoose.Schema({
   last_updated: { type: Date },
   magazineThumbnail: { type: String },
   magazinePdf: { type: String },
-  editionNumber: { type: Number },
+  editionNumber: { type: String },
 
   publishedMonth: {
     type: String,
