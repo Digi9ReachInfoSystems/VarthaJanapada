@@ -169,7 +169,7 @@ exports.recommendCategory = async (req, res) => {
     })
       .sort({ createdTime: -1 }) // Sort by most recent
       .limit(5) // Limit to top 5 articles
-      .populate("category", "name")
+      .populate("category")
       .populate("tags", "name");
 
     // Return the recommended news articles along with the recommended category
