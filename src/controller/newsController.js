@@ -435,7 +435,7 @@ exports.getNewsByCategory = async (req, res) => {
     }
 
     // Find news by category (No need for ObjectId conversion, use string comparison)
-    const news = await News.find({ category: category })
+    const news = await News.find({ category: category,isLive:true })
       .populate("category", "name")
       .populate("tags", "name");
 
