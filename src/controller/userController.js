@@ -166,6 +166,7 @@ exports.recommendCategory = async (req, res) => {
     // Fetch news articles from the recommended category (the one with the highest interactions)
     const recommendedNews = await News.find({
       category: recommendedCategory._id,
+      isLive:true
     })
       .sort({ createdTime: -1 }) // Sort by most recent
       .limit(5) // Limit to top 5 articles
