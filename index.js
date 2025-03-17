@@ -24,7 +24,7 @@ const port = process.env.PORT || 3000;
 const corsOptions = {
   origin: [
     "https://dipr.vercel.app",
-    "http://localhost:5173" // Add your second domain here
+    "https://frontend-digi9.vercel.app" // Add your second domain here
   ],
   credentials: true,
 };
