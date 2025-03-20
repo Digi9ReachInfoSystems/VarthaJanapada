@@ -70,7 +70,8 @@ const createMagazine = async (req, res) => {
 };
 const getMagazines = async (req, res) => {
   try {
-    const { publishedYear, publishedMonth, homepage } = req.query; // Extract query parameters
+    const { publishedYear, publishedMonth, homepage, editionNumber } =
+      req.query; // Extract query parameters
 
     // Build the filter object based on provided query parameters
     const filter = {};
@@ -82,6 +83,9 @@ const getMagazines = async (req, res) => {
 
     if (publishedMonth) {
       filter.publishedMonth = publishedMonth;
+    }
+    if (editionNumber && editionNumber.trim() !== "") {
+      filter.editionNumber = editionNumber.trim(); // Trim to remove any extra spaces
     }
 
     // Check if the homepage query parameter is passed

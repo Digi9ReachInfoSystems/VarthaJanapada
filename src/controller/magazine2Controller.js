@@ -68,10 +68,10 @@ const createMagazine = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
-
 const getMagazines = async (req, res) => {
   try {
-    const { publishedYear, publishedMonth, homepage } = req.query; // Extract query parameters
+    const { publishedYear, publishedMonth, homepage, editionNumber } =
+      req.query; // Extract query parameters
 
     // Build the filter object based on provided query parameters
     const filter = {};
@@ -84,9 +84,16 @@ const getMagazines = async (req, res) => {
     if (publishedMonth) {
       filter.publishedMonth = publishedMonth;
     }
-    const limit = homepage ? 10 : null;
 
-    // Find magazines based on the filter object
+    // Add editionNumber to the filter if it is provided and not empty
+    if (editionNumber && editionNumber.trim() !== "") {
+      filter.editionNumber = editionNumber.trim(); // Trim to remove any extra spaces
+    }
+
+    // Check if the homepage query parameter is passed
+    const limit = homepage ? 10 : null; // Limit to 10 items if homepage is true
+
+    // Find magazines based on the filter object and apply limit if necessary
     const magazines = await Magazine.find(filter)
       .sort({ createdTime: -1 }) // Sort by latest first
       .limit(limit); // Apply limit if homepage is true
