@@ -2,8 +2,9 @@ const mongoose = require("mongoose");
 
 const announcementSchema = new mongoose.Schema({
   title: {
-    type: String,
-    required: [true, "Announcement title is required."],
+    en: { type: String, required: [true, "English title is required."] },
+    hi: { type: String, required: [true, "Hindi title is required."] },
+    kn: { type: String, required: [true, "Kannada title is required."] },
   },
 
   createdTime: {

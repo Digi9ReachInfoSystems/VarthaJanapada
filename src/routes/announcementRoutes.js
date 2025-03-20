@@ -3,7 +3,7 @@ const announcementController = require("../controller/AnnouncementController.js"
 
 const router = express.Router();
 
-router.post("/", announcementController.createAnnouncement);
+// router.post("/", announcementController.createAnnouncement);
 
 router.get("/", announcementController.getAllAnnouncements);
 
