@@ -1,4 +1,4 @@
-const WishList = require("../models/wishListModel");
+const WishList = require("../models/wishlistModel");
 
 // 1. Create a new wishlist
 exports.createWishList = async (req, res) => {
