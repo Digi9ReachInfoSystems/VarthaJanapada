@@ -16,6 +16,7 @@ const sessionRoutes = require("./src/routes/sessionRoutes");
 const visitorRoutes = require("./src/routes/visitorRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const magazineRoutes2 = require("./src/routes/magazineRoutes2");
+const wishlistRoutes = require("./src/routes/wishlistRoutes");
 dotenv.config();
 
 const app = express();
@@ -24,7 +25,7 @@ const port = process.env.PORT || 3000;
 const corsOptions = {
   origin: [
     "https://dipr.vercel.app",
-    "https://frontend-digi9.vercel.app" // Add your second domain here
+    "https://frontend-digi9.vercel.app", // Add your second domain here
   ],
   credentials: true,
 };
@@ -46,6 +47,7 @@ app.use("/sessions", sessionRoutes);
 app.use("/visitors", visitorRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/api/magazine2", magazineRoutes2);
+app.use("/wishlist", wishlistRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
