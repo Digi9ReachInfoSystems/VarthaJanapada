@@ -174,7 +174,7 @@ exports.updateWishList = async (req, res) => {
   }
 };
 
-// 3. Get wishlist by userId
+// 3. Get wishlist by userId// 3. Get wishlist by userId
 exports.getWishListByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -187,13 +187,7 @@ exports.getWishListByUserId = async (req, res) => {
       "longVideo",
     ]);
 
-    if (!wishLists || wishLists.length === 0) {
-      return res.status(404).json({
-        status: "fail",
-        message: "No wishlists found for this user.",
-      });
-    }
-
+    // Return an empty array if no wishlists are found
     res.status(200).json({
       status: "success",
       results: wishLists.length,
