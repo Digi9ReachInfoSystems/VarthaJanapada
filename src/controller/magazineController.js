@@ -84,8 +84,10 @@ const getMagazines = async (req, res) => {
     if (publishedMonth) {
       filter.publishedMonth = publishedMonth;
     }
-    if (editionNumber && editionNumber.trim() !== "") {
-      filter.editionNumber = editionNumber.trim(); // Trim to remove any extra spaces
+    if (editionNumber !== undefined && editionNumber !== "0") {
+      if (editionNumber.trim() !== "") {
+        filter.editionNumber = editionNumber.trim();
+      }
     }
 
     // Check if the homepage query parameter is passed
