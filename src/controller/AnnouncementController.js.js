@@ -7,70 +7,69 @@ if (!base64Key) {
     "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
   );
 }
-// const credentials = JSON.parse(
-//   Buffer.from(base64Key, "base64").toString("utf-8")
-// );
+const credentials = JSON.parse(
+  Buffer.from(base64Key, "base64").toString("utf-8")
+);
 
-// const translate = new Translate({ credentials });
+const translate = new Translate({ credentials });
 
-// // Helper function to translate text
-// const translateText = async (text, targetLanguage) => {
-//   try {
-//     const [translation] = await translate.translate(text, targetLanguage);
-//     return translation;
-//   } catch (err) {
-//     console.error(`Error translating to ${targetLanguage}:`, err);
-//     return text; // Return the original text if translation fails
-//   }
-// };
+// Helper function to translate text
+const translateText = async (text, targetLanguage) => {
+  try {
+    const [translation] = await translate.translate(text, targetLanguage);
+    return translation;
+  } catch (err) {
+    console.error(`Error translating to ${targetLanguage}:`, err);
+    return text; // Return the original text if translation fails
+  }
+};
 
-// // 1. Create a new announcement with translations
-// exports.createAnnouncement = async (req, res) => {
-//   try {
-//     const { title, description } = req.body;
+exports.createAnnouncement = async (req, res) => {
+  try {
+    const { title, description } = req.body;
 
-//     // Translate the title and description into Hindi, English, and Kannada
-//     const [titleHindi, titleEnglish, titleKannada] = await Promise.all([
-//       translateText(title, "hi"), // Hindi
-//       translateText(title, "en"), // English
-//       translateText(title, "kn"), // Kannada
-//     ]);
+    // Translate the title and description into Hindi, English, and Kannada
+    const [titleHindi, titleEnglish, titleKannada] = await Promise.all([
+      translateText(title, "hi"), // Hindi
+      translateText(title, "en"), // English
+      translateText(title, "kn"), // Kannada
+    ]);
 
-//     const [descriptionHindi, descriptionEnglish, descriptionKannada] =
-//       await Promise.all([
-//         translateText(description, "hi"), // Hindi
-//         translateText(description, "en"), // English
-//         translateText(description, "kn"), // Kannada
-//       ]);
+    const [descriptionHindi, descriptionEnglish, descriptionKannada] =
+      await Promise.all([
+        translateText(description, "hi"), // Hindi
+        translateText(description, "en"), // English
+        translateText(description, "kn"), // Kannada
+      ]);
 
-//     // Create the announcement with translations
-//     const newAnnouncement = await Announcement.create({
-//       title: {
-//         en: titleEnglish,
-//         hi: titleHindi,
-//         kn: titleKannada,
-//       },
-//       description: {
-//         en: descriptionEnglish,
-//         hi: descriptionHindi,
-//         kn: descriptionKannada,
-//       },
-//     });
+    // Create the announcement with translations
+    const newAnnouncement = await Announcement.create({
+      title: {
+        en: titleEnglish,
+        hi: titleHindi,
+        kn: titleKannada,
+      },
+      description: {
+        en: descriptionEnglish,
+        hi: descriptionHindi,
+        kn: descriptionKannada,
+      },
+    });
 
-//     res.status(201).json({
-//       status: "success",
-//       data: {
-//         announcement: newAnnouncement,
-//       },
-//     });
-//   } catch (err) {
-//     res.status(400).json({
-//       status: "fail",
-//       message: err.message,
-//     });
-//   }
-// };
-// // 2. Get all announcements
+    res.status(201).json({
+      status: "success",
+      data: {
+        announcement: newAnnouncement,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: "fail",
+      message: err.message,
+    });
+  }
+};
+
 exports.getAllAnnouncements = async (req, res) => {
   try {
     const announcements = await Announcement.find().sort({ createdTime: -1 }); // Sort by latest first

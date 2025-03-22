@@ -166,7 +166,7 @@ exports.recommendCategory = async (req, res) => {
     // Fetch news articles from the recommended category (the one with the highest interactions)
     const recommendedNews = await News.find({
       category: recommendedCategory._id,
-      isLive:true
+      isLive: true,
     })
       .sort({ createdTime: -1 }) // Sort by most recent
       .limit(5) // Limit to top 5 articles
@@ -345,9 +345,10 @@ const serviceAccount = JSON.parse(
   Buffer.from(serviceAccountBase64, "base64").toString("utf8")
 );
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount),
+// });
 const generateSessionToken = (user) => {
   return jwt.sign(
     { userId: user._id, phone_Number: user.phone_Number },

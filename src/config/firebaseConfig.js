@@ -16,6 +16,7 @@ const serviceAccount = JSON.parse(
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  storageBucket: "gs://varthajanapadanewsapp.firebasestorage.app",
 });
 
 module.exports = admin;
