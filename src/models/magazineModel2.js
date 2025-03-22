@@ -10,6 +10,9 @@ const magazineSchema2 = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
   },
+  publishedDate: {
+    type: Date,
+  },
   kannada: {
     title: { type: String, required: true },
     description: { type: String, required: true },

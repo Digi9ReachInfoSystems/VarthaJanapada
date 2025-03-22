@@ -227,3 +227,41 @@ exports.createUserWithRole = async (req, res) => {
     });
   }
 };
+
+exports.checkUserByPhoneNumber = async (req, res) => {
+  try {
+    const { phone_Number } = req.body;
+
+    // Check if the phone number is provided
+    if (!phone_Number) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required",
+      });
+    }
+
+    // Find the user by phone number
+    const user = await User.findOne({ phone_Number });
+
+    if (user) {
+      // If user exists, return success and user data
+      return res.status(200).json({
+        success: true,
+        message: "User account exists",
+        data: user,
+      });
+    } else {
+      // If user does not exist, return a message indicating that
+      return res.status(404).json({
+        success: false,
+        message: "User account does not exist",
+      });
+    }
+  } catch (error) {
+    // Handle any errors that occur during the process
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
