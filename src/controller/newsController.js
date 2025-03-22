@@ -7,73 +7,16 @@ const fs = require("fs");
 const util = require("util");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
-const { v4: uuidv4 } = require("uuid");
-const client = new textToSpeech.TextToSpeechClient();
-const admin = require("./../config/firebaseConfig");
-const bucket = admin.storage().bucket();
-
-// admin.initializeApp({...});
-
 
 const base64Key = process.env.GOOGLE_APPLICATION_KEY;
 if (!base64Key) {
-  throw new Error(
-    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
-  );
+  throw new Error("GOOGLE_APPLICATION_KEY is not set in environment variables");
 }
-// const fs = require("fs");
-const path = require("path");
-
-const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS; // Path to the JSON key file
-if (!keyFilePath) {
-  throw new Error(
-    "GOOGLE_APPLICATION_CREDENTIALS is not set in environment variables"
-  );
-}
-
 const credentials = JSON.parse(
-  fs.readFileSync(path.resolve(keyFilePath), "utf8")
+  Buffer.from(base64Key, "base64").toString("utf-8")
 );
+
 const translate = new Translate({ credentials });
-async function generateAudio(text, language) {
-  const languageCodes = {
-    hindi: "hi-IN",
-    kannada: "kn-IN",
-    english: "en-US",
-  };
-
-  const request = {
-    input: { text },
-    voice: {
-      languageCode: languageCodes[language],
-      ssmlGender: "FEMALE",
-    },
-    audioConfig: {
-      audioEncoding: "MP3",
-    },
-  };
-
-  const [response] = await client.synthesizeSpeech(request);
-  return response.audioContent;
-}
-
-async function uploadToFirebase(audioBuffer, language, newsId) {
-  const fileName = `news-audio/${newsId}/${language}-${uuidv4()}.mp3`;
-  const file = bucket.file(fileName);
-
-  await file.save(audioBuffer, {
-    metadata: {
-      contentType: "audio/mpeg",
-      metadata: {
-        firebaseStorageDownloadTokens: uuidv4(),
-      },
-    },
-  });
-
-  return `https://firebasestorage.googleapis.com/v0/b/${
-    bucket.name
-  }/o/${encodeURIComponent(fileName)}?alt=media`;
-}
 
 exports.createNews = async (req, res) => {
   try {
@@ -160,31 +103,6 @@ exports.createNews = async (req, res) => {
     });
 
     const savedNews = await news.save();
-
-    const audioPromises = [
-      { lang: "hindi", text: savedNews.hindi.description },
-      { lang: "kannada", text: savedNews.kannada.description },
-      { lang: "english", text: savedNews.English.description },
-    ].map(async ({ lang, text }) => {
-      if (!text) return null;
-      try {
-        const audioBuffer = await generateAudio(text, lang);
-        return uploadToFirebase(audioBuffer, lang, savedNews._id);
-      } catch (error) {
-        console.error(`Audio generation failed for ${lang}:`, error);
-        return null;
-      }
-    });
-
-    const [hindiAudio, kannadaAudio, englishAudio] = await Promise.all(
-      audioPromises
-    );
-
-    savedNews.hindi.audio_description = hindiAudio || "";
-    savedNews.kannada.audio_description = kannadaAudio || "";
-    savedNews.English.audio_description = englishAudio || "";
-
-    const updatedNews = await savedNews.save();
     res.status(201).json({ success: true, data: savedNews });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -515,7 +433,7 @@ exports.getNewsByCategory = async (req, res) => {
     }
 
     // Find news by category (No need for ObjectId conversion, use string comparison)
-    const news = await News.find({ category: category, islive: true })
+    const news = await News.find({ category: category, isLive: true })
       .populate("category")
       .populate("tags", "name");
 
