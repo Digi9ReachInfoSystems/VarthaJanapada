@@ -27,6 +27,7 @@ const corsOptions = {
   origin: [
     "https://dipr.vercel.app",
     "https://frontend-digi9.vercel.app", // Add your second domain here
+    "http://localhost:5173",
   ],
   credentials: true,
 };
