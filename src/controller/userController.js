@@ -421,7 +421,7 @@ exports.loginOnWeb = async (req, res) => {
     console.error("Error in loginOnWeb:", error);
     return res
       .status(401)
-      .json({ success: false, error: "Invalid Firebase token" });
+      .json({ success: false, error: error.message });
   }
 };
 
