@@ -2,8 +2,9 @@ const User = require("../models/userModel");
 const News = require("../models/newsModel");
 const Category = require("../models/categoryModel");
 const mongoose = require("mongoose");
-const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
+const admin = require("../config/firebaseConfig"); // Import initialized Firebase admin
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
@@ -345,10 +346,6 @@ const serviceAccount = JSON.parse(
   Buffer.from(serviceAccountBase64, "base64").toString("utf8")
 );
 
-
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-// });
 const generateSessionToken = (user) => {
   return jwt.sign(
     { userId: user._id, phone_Number: user.phone_Number },
