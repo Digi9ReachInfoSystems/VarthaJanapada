@@ -29,6 +29,7 @@ const corsOptions = {
     "https://frontend-digi9.vercel.app", // Add your second domain here
     "http://localhost:5173",
     "https://diprwebapp.gully2global.in",
+    "https://dipradmin.gully2global.in",
   ],
   credentials: true,
 };
