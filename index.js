@@ -25,11 +25,11 @@ const port = process.env.PORT || 3000;
 
 const corsOptions = {
   origin: [
+    "https://diprwebapp.gully2global.in",   // already allowed
+    "https://dipradmin.gully2global.in",    // ✅ now also allowed
     "https://dipr.vercel.app",
-    "https://frontend-digi9.vercel.app", // Add your second domain here
     "http://localhost:5173",
-    "https://diprwebapp.gully2global.in",
-    "https://dipradmin.gully2global.in",
+    "https://frontend-digi9.vercel.app",
   ],
   credentials: true,
 };
