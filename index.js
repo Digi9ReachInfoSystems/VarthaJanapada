@@ -30,13 +30,11 @@ const corsOptions = {
     "https://dipr.vercel.app",
     "http://localhost:5173",
     "https://frontend-digi9.vercel.app",
-    "https://vartha-janapada.vercel.app"
   ],
   credentials: true,
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 connectDB();
 app.use(express.json());
 app.use("/api/news", newsRoutes);
