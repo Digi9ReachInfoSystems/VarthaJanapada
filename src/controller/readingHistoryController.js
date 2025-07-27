@@ -1,25 +1,47 @@
 const ReadingHistory = require('../models/readingHistoryModel');
 const News = require('../models/newsModel');
-// Add Blog model if you have one
+const Magazine = require('../models/magazineModel');
 
 // Log a reading event
 exports.logReading = async (req, res) => {
   try {
-    const { userId, contentId, contentType } = req.body;
+    const { userId, contentId, contentType, timeSpent } = req.body;
     if (!userId || !contentId || !contentType) {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
+
     let category = undefined;
     let tags = undefined;
+    let author = undefined;
+
     if (contentType === 'news') {
       const news = await News.findById(contentId);
       if (news) {
         category = news.category;
         tags = news.tags;
+        author = news.author; // Track author for better recommendations
       }
     }
-    // If you have a Blog model, add similar logic here
-    const history = new ReadingHistory({ userId, contentId, contentType, category, tags });
+
+    // Prevent duplicate logs
+    const existing = await ReadingHistory.findOne({ userId, contentId, contentType });
+    if (existing) {
+      existing.viewedAt = new Date();
+      if (typeof timeSpent === 'number') existing.timeSpent = timeSpent;
+      if (author) existing.author = author; // Update author if available
+      await existing.save();
+      return res.status(200).json({ message: 'Reading event updated.' });
+    }
+
+    const history = new ReadingHistory({ 
+      userId, 
+      contentId, 
+      contentType, 
+      category, 
+      tags, 
+      author,
+      timeSpent 
+    });
     await history.save();
     res.status(201).json({ message: 'Reading event logged.' });
   } catch (err) {

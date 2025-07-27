@@ -20,6 +20,7 @@ const wishlistRoutes = require("./src/routes/wishlistRoutes");
 const announcement = require("./src/routes/announcementRoutes");
 const readingHistoryRoutes = require("./src/routes/readingHistoryRoutes");
 const recommendationRoutes = require("./src/routes/recommendationRoutes");
+const analyticsRoutes = require("./src/routes/analyticsRoutes");
 dotenv.config();
 
 const app = express();
@@ -57,7 +58,7 @@ app.use("/wishlist", wishlistRoutes);
 app.use("/announcement", announcement);
 app.use("/api/reading-history", readingHistoryRoutes);
 app.use("/api/recommendations", recommendationRoutes);
-
+app.use("/api/analytics", analyticsRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
