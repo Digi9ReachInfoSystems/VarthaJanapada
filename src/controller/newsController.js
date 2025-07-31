@@ -7,6 +7,9 @@ const fs = require("fs");
 const util = require("util");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
+const NewsVersion = require("../models/newsVersionModel");
+
+
 
 const base64Key = process.env.GOOGLE_APPLICATION_KEY;
 if (!base64Key) {
@@ -100,6 +103,8 @@ exports.createNews = async (req, res) => {
         title: englishTitle,
         description: englishDescription,
       },
+      createdBy: req.user.id,
+      status: req.user.role === "admin" ? "approved" : "pending",
     });
 
     const savedNews = await news.save();
@@ -159,7 +164,8 @@ exports.getAllNews = async (req, res) => {
     const newsList = await News.find({ isLive: true })
       .sort({ createdTime: -1 })
       .populate("category")
-      .populate("tags", "name");
+      .populate("tags", "name")
+      .populate("createdBy");
 
     res.status(200).json({ success: true, data: newsList });
   } catch (error) {
@@ -186,80 +192,46 @@ exports.getNewsById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.updateNews = async (req, res) => {
   try {
     const { category, tags, hindi, kannada, English, ...updateData } = req.body;
 
-    // Validate category existence
-    if (category) {
-      const categoryExists = await Category.findById(category);
-      if (!categoryExists) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid category ID" });
-      }
-    }
-
-    // Validate tags existence
-    if (tags && tags.length > 0) {
-      const existingTags = await Tags.find({ _id: { $in: tags } });
-      if (existingTags.length !== tags.length) {
-        return res
-          .status(400)
-          .json({ success: false, message: "One or more tags are invalid" });
-      }
-    }
-
-    // Validate language fields (Hindi, Kannada, English)
     const news = await News.findById(req.params.id);
-    if (!news) {
-      return res
-        .status(404)
-        .json({ success: false, message: "News not found" });
-    }
+    if (!news) return res.status(404).json({ success: false, message: "News not found" });
 
-    // Update Hindi, Kannada, and English titles and descriptions if they are provided
-    if (hindi) {
-      news.hindi = { ...news.hindi, ...hindi };
-    }
-    if (kannada) {
-      news.kannada = { ...news.kannada, ...kannada };
-    }
-    if (English) {
-      news.English = { ...news.English, ...English };
-    }
+    // STEP 1: Create a snapshot BEFORE changes are made
+    const versionCount = await NewsVersion.countDocuments({ newsId: news._id });
+    await NewsVersion.create({
+      newsId: news._id,
+      updatedBy: req.user.id,
+      versionNumber: versionCount + 1,
+      snapshot: news.toObject(), // snapshot BEFORE mutation
+    });
 
-    // Ensure the `isLive` field is always updated to `true`
+    // STEP 2: Apply updates
+    if (hindi) news.hindi = { ...news.hindi, ...hindi };
+    if (kannada) news.kannada = { ...news.kannada, ...kannada };
+    if (English) news.English = { ...news.English, ...English };
+    if (category) news.category = category;
+    if (tags) news.tags = tags;
+
+    Object.assign(news, updateData);
     news.isLive = true;
+    news.last_updated = new Date();
+    news.status = req.user.role === "admin" ? "approved" : "pending";
+    news.createdBy = req.user.id;
 
-    // Update the remaining fields like category, tags, etc.
-    const updatedNews = await News.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...updateData,
-        category,
-        tags,
-        hindi: news.hindi,
-        kannada: news.kannada,
-        English: news.English,
-        isLive: news.isLive, // Ensure isLive is updated
-      },
-      { new: true }
-    )
-      .populate("category", "name")
-      .populate("tags", "name");
-
-    if (!updatedNews) {
-      return res
-        .status(404)
-        .json({ success: false, message: "News not found" });
-    }
-
+    const updatedNews = await news.save();
     res.status(200).json({ success: true, data: updatedNews });
   } catch (error) {
+    console.error("Update News Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+
 
 exports.deleteNews = async (req, res) => {
   try {
@@ -456,6 +428,141 @@ exports.getTotalNews = async (req, res) => {
     const totalNews = await News.countDocuments();
     res.status(200).json({ success: true, data: totalNews });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.approveNews = async (req, res) => {
+  try {
+    const user = req.user; // assume req.user is set by your auth middleware
+    if (user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Only admins can approve news" });
+    }
+
+    const { id } = req.params;
+    const news = await News.findById(id);
+    if (!news) {
+      return res
+        .status(404)
+        .json({ success: false, message: "News not found" });
+    }
+
+    if (news.status === "approved") {
+      return res
+        .status(400)
+        .json({ success: false, message: "News already approved" });
+    }
+
+    news.status = "approved";
+    news.approvedBy = user.id; // you may want to add these fields to your schema
+    news.approvedAt = new Date();
+    await news.save();
+
+    res.json({ success: true, data: news });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.getNewsHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const history = await NewsVersion.find({ newsId: id })
+      .populate("updatedBy", "displayName email")
+      .sort({ versionNumber: -1 }); // latest version first
+
+    if (!history.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No version history found for this news article",
+        data: [],
+      });
+    }
+
+    res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+// exports.revertNewsToVersion = async (req, res) => {
+//   try {
+//     const { id, versionNumber } = req.params;
+
+//     const version = await NewsVersion.findOne({ newsId: id, versionNumber });
+//     if (!version) {
+//       return res.status(404).json({ success: false, message: "Version not found" });
+//     }
+
+//     // Perform a raw update to prevent version tracking middleware
+//     await News.updateOne({ _id: id }, version.snapshot);
+
+//     const updatedNews = await News.findById(id);
+
+//     res.status(200).json({ success: true, data: updatedNews });
+//   } catch (error) {
+//     console.error("Revert error:", error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+exports.revertNewsToVersion = async (req, res) => {
+  try {
+    const { id, versionNumber } = req.params;
+
+    const currentVersionNumber = parseInt(versionNumber);
+    const targetVersionNumber = currentVersionNumber - 1;
+
+    // Find the version to revert to
+    const targetVersion = await NewsVersion.findOne({
+      newsId: id,
+      versionNumber: targetVersionNumber,
+    });
+
+    if (!targetVersion) {
+      return res.status(404).json({ success: false, message: "Target version not found." });
+    }
+
+    // Overwrite current article with snapshot of previous version
+    await News.updateOne({ _id: id }, targetVersion.snapshot);
+
+    // Delete current version
+    await NewsVersion.deleteOne({
+      newsId: id,
+      versionNumber: currentVersionNumber,
+    });
+
+    res.status(200).json({ success: true, message: "Reverted and cleaned up successfully" });
+  } catch (error) {
+    console.error("Error in revertAndDeleteCurrentVersion:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+exports.deleteVersion = async (req, res) => {
+  try {
+    const { id, versionNumber } = req.params;
+
+    const deleted = await NewsVersion.findOneAndDelete({ newsId: id, versionNumber });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Version not found" });
+    }
+
+    // STEP 2: Renumber all remaining versions sequentially
+    const versions = await NewsVersion.find({ newsId: id }).sort({ versionNumber: 1 });
+
+    for (let i = 0; i < versions.length; i++) {
+      versions[i].versionNumber = i + 1;
+      await versions[i].save();
+    }
+
+    res.status(200).json({ success: true, message: "Version deleted and renumbered successfully" });
+  } catch (error) {
+    console.error("Error in deleteVersion:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

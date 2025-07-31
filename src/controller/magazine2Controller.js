@@ -1,7 +1,8 @@
 const Magazine = require("../models/magazineModel2"); // Capital 'M' for model
 const { search } = require("../routes/newsRoutes");
 const { Translate } = require("@google-cloud/translate").v2;
-
+const MagazineVersion = require("../models/magazineVersionModel2");
+ 
 const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
 if (!base64Key) {
   throw new Error(
@@ -58,6 +59,8 @@ const createMagazine = async (req, res) => {
       magazinePdf: req.body.magazinePdf,
       editionNumber: req.body.editionNumber,
       last_updated: new Date(),
+      createdBy: req.user.id,
+      status:req.user.role === "admin" ? "approved" : "pending",
     });
 
     // Save the new magazine to the database
@@ -97,7 +100,8 @@ const getMagazines = async (req, res) => {
     // Find magazines based on the filter object and apply limit if necessary
     const magazines = await Magazine.find(filter)
       .sort({ createdTime: -1 }) // Sort by latest first
-      .limit(limit); // Apply limit if homepage is true
+      .limit(limit) // Apply limit if homepage is true
+      .populate("createdBy");
 
     res.status(200).json({ success: true, data: magazines });
   } catch (error) {
@@ -120,17 +124,24 @@ const getMagazineById = async (req, res) => {
   }
 };
 
-const deleteMagazine = async (req, res) => {
+
+const deleteMagazineVersion2 = async (req, res) => {
   try {
-    const deletedMagazine = await Magazine.findByIdAndDelete(req.params.id); // Use 'Magazine'
-    if (!deletedMagazine) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Magazine not found" });
+    const { id, versionNumber } = req.params;
+    const deleted = await MagazineVersion.findOneAndDelete({ magazineId: id, versionNumber });
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Version not found" });
     }
-    res
-      .status(200)
-      .json({ success: true, message: "Magazine deleted successfully" });
+
+    // Renumber all remaining versions sequentially
+    const versions = await MagazineVersion.find({ magazineId: id }).sort({ versionNumber: 1 });
+    for (let i = 0; i < versions.length; i++) {
+      versions[i].versionNumber = i + 1;
+      await versions[i].save();
+    }
+
+    res.status(200).json({ success: true, message: "Version deleted and renumbered successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -173,34 +184,83 @@ const getTotalMagazines = async (req, res) => {
   }
 };
 
+// const updateMagazine = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const updatedData = req.body;
+
+//     // Ensure the magazine exists
+//     const magazine = await Magazine.findById(id);
+//     if (!magazine) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Magazine not found",
+//       });
+//     }
+
+//     // Update the magazine with the provided data (partial update)
+//     // Only fields that are provided will be updated
+//     if (updatedData.title) magazine.title = updatedData.title;
+//     if (updatedData.description) magazine.description = updatedData.description;
+//     if (updatedData.magazineThumbnail)
+//       magazine.magazineThumbnail = updatedData.magazineThumbnail;
+//     if (updatedData.magazinePdf) magazine.magazinePdf = updatedData.magazinePdf;
+//     if (updatedData.editionNumber)
+//       magazine.editionNumber = updatedData.editionNumber;
+
+//     // Update the last_updated timestamp
+//     magazine.last_updated = new Date();
+
+//     if(req.user.role === "moderator") {
+//       magazine.status = "pending";
+//     }
+//     // Save the updated magazine
+//     const updatedMagazine = await magazine.save();
+
+//     res.status(200).json({
+//       success: true,
+//       data: updatedMagazine,
+//       message: "Magazine updated successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 const updateMagazine = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
 
-    // Ensure the magazine exists
     const magazine = await Magazine.findById(id);
     if (!magazine) {
-      return res.status(404).json({
-        success: false,
-        message: "Magazine not found",
-      });
+      return res.status(404).json({ success: false, message: "Magazine not found" });
     }
 
-    // Update the magazine with the provided data (partial update)
-    // Only fields that are provided will be updated
+    // Save version snapshot BEFORE applying updates
+    const versionCount = await MagazineVersion.countDocuments({ magazineId: id });
+    await MagazineVersion.create({
+      magazineId: id,
+      versionNumber: versionCount + 1,
+      updatedBy: req.user.id,
+      snapshot: magazine.toObject(),
+    });
+
+    // Apply updates
     if (updatedData.title) magazine.title = updatedData.title;
     if (updatedData.description) magazine.description = updatedData.description;
-    if (updatedData.magazineThumbnail)
-      magazine.magazineThumbnail = updatedData.magazineThumbnail;
+    if (updatedData.magazineThumbnail) magazine.magazineThumbnail = updatedData.magazineThumbnail;
     if (updatedData.magazinePdf) magazine.magazinePdf = updatedData.magazinePdf;
-    if (updatedData.editionNumber)
-      magazine.editionNumber = updatedData.editionNumber;
+    if (updatedData.editionNumber) magazine.editionNumber = updatedData.editionNumber;
 
-    // Update the last_updated timestamp
     magazine.last_updated = new Date();
+    if (req.user.role === "moderator") {
+      magazine.status = "pending";
+    }
 
-    // Save the updated magazine
     const updatedMagazine = await magazine.save();
 
     res.status(200).json({
@@ -209,19 +269,141 @@ const updateMagazine = async (req, res) => {
       message: "Magazine updated successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
+const getMagazineHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const history = await MagazineVersion.find({ magazineId: id })
+      .populate("updatedBy", "displayName email")
+      .sort({ versionNumber: -1 });
+
+    if (!history.length) {
+      return res.status(404).json({ success: false, message: "No version history found" });
+    }
+
+    res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const approvemagazine = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = { status: "approved" };
+    const updatedMagazine = await Magazine.findByIdAndUpdate(id, updatedData, {
+      new: true,
+    });
+    if (!updatedMagazine) {
+      return res.status(404).json({ success: false, message: "Magazine not found" });
+    }
+    res.status(200).json({ success: true, data: updatedMagazine });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// const getMagazineHistory = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const versions = await MagazineVersion.find({ magazineId: id })
+//       .populate("updatedBy", "displayName email")
+//       .sort({ versionNumber: -1 });
+
+//     if (!versions.length) {
+//       return res.status(404).json({ success: false, message: "No version history found" });
+//     }
+
+//     res.status(200).json({ success: true, data: versions });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+const revertMagazineToVersion = async (req, res) => {
+  try {
+    const { id, versionNumber } = req.params;
+
+    const currentVersionNumber = parseInt(versionNumber);
+    const targetVersionNumber = currentVersionNumber - 1;
+
+    const targetVersion = await MagazineVersion.findOne({
+      magazineId: id,
+      versionNumber: targetVersionNumber,
+    });
+
+    if (!targetVersion) {
+      return res.status(404).json({ success: false, message: "Target version not found." });
+    }
+
+    await Magazine.updateOne({ _id: id }, targetVersion.snapshot);
+
+    await MagazineVersion.deleteOne({
+      magazineId: id,
+      versionNumber: currentVersionNumber,
+    });
+
+    res.status(200).json({ success: true, message: "Reverted and cleaned up successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// const deleteMagazineVersion = async (req, res) => {
+//   try {
+//     const { id, versionNumber } = req.params;
+//     const deleted = await MagazineVersion.findOneAndDelete({ magazineId: id, versionNumber });
+
+//     if (!deleted) {
+//       return res.status(404).json({ success: false, message: "Version not found" });
+//     }
+
+//     // Renumber all remaining versions sequentially
+//     const versions = await MagazineVersion.find({ magazineId: id }).sort({ versionNumber: 1 });
+//     for (let i = 0; i < versions.length; i++) {
+//       versions[i].versionNumber = i + 1;
+//       await versions[i].save();
+//     }
+
+//     res.status(200).json({ success: true, message: "Version deleted and renumbered successfully" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+const deleteMagazine = async (req, res) => {
+  try {
+    const deletedMagazine = await Magazine.findByIdAndDelete(req.params.id); // Use 'Magazine'
+    if (!deletedMagazine) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Magazine not found" });
+    }
+    res
+      .status(200)
+      .json({ success: true, message: "Magazine deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 module.exports = {
   createMagazine,
   getMagazines,
   getMagazineById,
-  deleteMagazine,
+  deleteMagazineVersion2,
   searchMagazine,
   getTotalMagazines,
   updateMagazine,
+  approvemagazine,
+  getMagazineHistory,
+  revertMagazineToVersion,
+  deleteMagazine
 };

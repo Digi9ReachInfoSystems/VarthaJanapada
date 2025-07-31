@@ -18,7 +18,8 @@ const translate = new Translate({ credentials });
 exports.createCategory = async (req, res) => {
   try {
     // Get the name from the request body
-    const { name } = req.body;
+    const { name, description } = req.body;
+    const user = req.user;
 
     // Define the target languages for translation
     const targetLanguages = ["en", "kn", "hi"]; // English, Kannada, Hindi
@@ -37,6 +38,10 @@ exports.createCategory = async (req, res) => {
       english: translations[0][0], // English translation
       kannada: translations[1][0], // Kannada translation
       hindi: translations[2][0], // Hindi translation
+      createdBy: user.id,
+      name,
+      description,
+      status: user.role === "admin" ? "approved" : "pending",
     });
 
     // Save the category to the database
@@ -49,6 +54,7 @@ exports.createCategory = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.getAllCategories = async (req, res) => {
   try {
     const categoriesList = await Category.find().sort({ createdTime: -1 });
@@ -60,19 +66,44 @@ exports.getAllCategories = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
   try {
-    const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    const user = req.user;
+    const category = await Category.findById(req.params.id);
+
     if (!category) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Category not found" });
+      return res.status(404).json({ success: false, message: "Category not found" });
     }
-    res.status(200).json({ success: true, data: category });
+
+    Object.assign(category, req.body);
+    category.last_updated = new Date();
+
+    // Moderator edits go to pending
+    if (user.role === "moderator") {
+      category.status = "pending";
+    }
+
+    const updated = await category.save();
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.approveCategory = async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) return res.status(404).json({ success: false, message: "Category not found" });
+
+    category.status = "approved";
+    category.last_updated = new Date();
+    await category.save();
+
+    res.status(200).json({ success: true, message: "Category approved", data: category });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 exports.deleteCategory = async (req, res) => {
   try {
@@ -82,7 +113,7 @@ exports.deleteCategory = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Category not found" });
     }
-    res.status(200).json({ success: true, data: {} });
+    res.status(200).json({ success: true, data: {},message: "Category deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

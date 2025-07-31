@@ -98,6 +98,15 @@ const newsSchema = new mongoose.Schema({
       type: String,
     },
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
 });
 
 module.exports = mongoose.model("News", newsSchema);
