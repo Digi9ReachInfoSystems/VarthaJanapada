@@ -30,6 +30,15 @@ const magazineSchema2 = new mongoose.Schema({
   publishedYear: {
     type: String,
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
 });
 
 module.exports = mongoose.model("Magazine2", magazineSchema2);

@@ -62,6 +62,15 @@ const videoSchema = new mongoose.Schema({
       ref: "Comment",
     },
   ],
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
 });
 
 module.exports = mongoose.model("Video", videoSchema);

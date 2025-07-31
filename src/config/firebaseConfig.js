@@ -14,9 +14,19 @@ const serviceAccount = JSON.parse(
   Buffer.from(serviceAccountBase64, "base64").toString("utf8")
 );
 
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount),
+//   // storageBucket: "gs://varthajanapadanewsapp.firebasestorage.app",
+
+//   storageBucket: "varthajanapada.appspot.com",
+// });
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: "gs://varthajanapadanewsapp.firebasestorage.app",
+  storageBucket: "varthajanapada.appspot.com",
 });
 
+
 module.exports = admin;
+
+
+

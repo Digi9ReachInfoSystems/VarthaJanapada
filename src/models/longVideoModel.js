@@ -61,6 +61,15 @@ const LongVideoSchema = new mongoose.Schema({
       ref: "Comment",
     },
   ],
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
 });
 
 module.exports = mongoose.model("LongVideo", LongVideoSchema);

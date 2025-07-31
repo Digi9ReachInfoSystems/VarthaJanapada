@@ -1,22 +1,56 @@
 const express = require("express");
 const router = express.Router();
 const newsController = require("../controller/newsController");
+
+const authenticateJWT = require("../middleware/authenticateRole");
+const allowedRoles = require("../middleware/allowedRole");
+
+router.post(
+  "/createNews",
+  authenticateJWT,
+  allowedRoles(["admin", "moderator"]),
+  newsController.createNews
+);
+
 router.get("/total-news", newsController.getTotalNews);
 router.get("/latest", newsController.getLatestNews);
-router.post("/createNews", newsController.createNews);
 router.get("/", newsController.getAllNews);
 router.get("/:id", newsController.getNewsById);
-
-router.put("/:id", newsController.updateNews);
-router.delete("/:id", newsController.deleteNews);
 router.get("/translate/:id/:targetLang", newsController.translateNews);
-
 router.post("/addComment", newsController.addComment);
-router.delete(
-  "/deleteComment/:commentId/:userId",
-  newsController.deleteComment
-);
 router.get("/search/:query", newsController.searchNews);
 router.get("/categories/:category", newsController.getNewsByCategory);
 
+router.patch(
+  "/:id",
+  authenticateJWT,
+  allowedRoles(["admin", "moderator"]),
+  newsController.updateNews
+);
+
+router.delete(
+  "/:id",
+  authenticateJWT,
+  allowedRoles(["admin"]),
+  newsController.deleteNews
+);
+
+router.delete(
+  "/deleteComment/:commentId/:userId",
+  authenticateJWT,allowedRoles(["admin", "moderator"]),
+  newsController.deleteComment
+);
+
+router.put(
+  "/approveNews/:id",
+  authenticateJWT,
+  allowedRoles(["admin"]),
+  newsController.approveNews
+);
+
+
+
+router.get("/getNewsHistory/:id",newsController.getNewsHistory);
+router.post("/revertNews/:id/revert/:versionNumber", newsController.revertNewsToVersion);
+router.delete("/deleteVersion/:id/delete/:versionNumber", newsController.deleteVersion);
 module.exports = router;
