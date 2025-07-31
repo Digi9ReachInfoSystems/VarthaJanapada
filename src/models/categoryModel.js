@@ -18,6 +18,11 @@ const categorySchema = new mongoose.Schema({
   description: {
     type: String,
   },
+   status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
   createdTime: {
     type: Date,
     default: Date.now,

@@ -18,6 +18,7 @@ const notificationRoutes = require("./src/routes/notificationRoutes");
 const magazineRoutes2 = require("./src/routes/magazineRoutes2");
 const wishlistRoutes = require("./src/routes/wishlistRoutes");
 const announcement = require("./src/routes/announcementRoutes");
+const searchContent = require("./src/routes/searchRoutes");
 dotenv.config();
 
 const app = express();
@@ -29,6 +30,7 @@ const corsOptions = {
     "https://dipradmin.gully2global.in",    // ✅ now also allowed
     "https://dipr.vercel.app",
     "http://localhost:5173",
+    "http://localhost:5174",
     "https://frontend-digi9.vercel.app",
   ],
   credentials: true,
@@ -53,7 +55,7 @@ app.use("/notifications", notificationRoutes);
 app.use("/api/magazine2", magazineRoutes2);
 app.use("/wishlist", wishlistRoutes);
 app.use("/announcement", announcement);
-
+app.use("/api/search", searchContent);
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });

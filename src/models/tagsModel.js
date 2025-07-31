@@ -16,6 +16,15 @@ const tagsSchema = new mongoose.Schema({
   last_updated: {
     type: Date,
   },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
 });
 
 module.exports = mongoose.model("Tags", tagsSchema);
