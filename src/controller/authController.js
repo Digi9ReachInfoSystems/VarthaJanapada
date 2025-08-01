@@ -269,20 +269,21 @@
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const admin = require("../config/firebaseConfig");
 
 // Set secure cookies
 const setTokens = (res, accessToken, refreshToken) => {
-  res.cookie('accessToken', accessToken, {
+  res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
-  res.cookie('refreshToken', refreshToken, {
+  res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
@@ -290,19 +291,33 @@ const setTokens = (res, accessToken, refreshToken) => {
 // Signup with phone
 exports.signup = async (req, res) => {
   try {
-    const { phone_Number, displayName, profileImage, email, password } = req.body;
+    const { phone_Number, displayName, profileImage, email, password } =
+      req.body;
 
     const existing = await User.findOne({ phone_Number });
-    if (existing) return res.status(400).json({ success: false, message: "Phone number already registered" });
+    if (existing)
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone number already registered" });
 
-    const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 12)
+      : undefined;
 
     const user = await User.create({
       phone_Number,
       displayName,
       email,
       profileImage,
-      password: hashedPassword
+      password: hashedPassword,
+    });
+    await admin.auth().createUser({
+      uid: user._id.toString(),
+      email,
+      phoneNumber: `+91${phone_Number}`,
+      displayName,
+      photoURL: profileImage,
+      password: password || undefined,
     });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
@@ -326,15 +341,20 @@ exports.signupWithEmail = async (req, res) => {
     const { displayName, profileImage, email, password } = req.body;
 
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ success: false, message: "Email already registered" });
+    if (existing)
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
 
-    const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 12)
+      : undefined;
 
     const user = await User.create({
       displayName,
       email,
       profileImage,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
@@ -364,7 +384,10 @@ exports.login = async (req, res) => {
       { new: true }
     );
 
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
@@ -383,14 +406,17 @@ exports.login = async (req, res) => {
 // Create user with specific role (admin only)
 exports.createUserWithRole = async (req, res) => {
   try {
-    const { phone_Number, displayName, profileImage, email, role, password } = req.body;
+    const { phone_Number, displayName, profileImage, email, role, password } =
+      req.body;
 
     const validRoles = ["admin", "moderator", "content"];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ success: false, message: "Invalid role" });
     }
 
-    const hashedPassword = password ? await bcrypt.hash(password, 12) : undefined;
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 12)
+      : undefined;
 
     const user = await User.create({
       phone_Number,
@@ -398,7 +424,7 @@ exports.createUserWithRole = async (req, res) => {
       profileImage,
       email,
       password: hashedPassword,
-      role
+      role,
     });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
@@ -410,7 +436,14 @@ exports.createUserWithRole = async (req, res) => {
     delete userData.password;
     delete userData.refreshToken;
 
-    res.status(201).json({ success: true, message: "User created", data: userData, accessToken });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "User created",
+        data: userData,
+        accessToken,
+      });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
@@ -423,7 +456,10 @@ exports.loginWithUserRole = async (req, res) => {
     const query = phone_Number ? { phone_Number } : { email };
 
     const user = await User.findOne(query);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
@@ -434,7 +470,7 @@ exports.loginWithUserRole = async (req, res) => {
     delete userData.password;
     delete userData.refreshToken;
 
-    res.status(200).json({ success: true, data: userData, token:accessToken });
+    res.status(200).json({ success: true, data: userData, token: accessToken });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -444,13 +480,18 @@ exports.loginWithUserRole = async (req, res) => {
 exports.refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
-    if (!token) return res.status(401).json({ success: false, message: "Missing refresh token" });
+    if (!token)
+      return res
+        .status(401)
+        .json({ success: false, message: "Missing refresh token" });
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.id).select('+refreshToken');
+    const user = await User.findById(decoded.id).select("+refreshToken");
 
     if (!user || user.refreshToken !== token) {
-      return res.status(401).json({ success: false, message: "Invalid refresh token" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid refresh token" });
     }
 
     const { accessToken, refreshToken: newRefresh } = user.generateAuthToken();
@@ -467,7 +508,8 @@ exports.refreshToken = async (req, res) => {
 // Logout
 exports.logout = async (req, res) => {
   try {
-    if (req.userId) await User.findByIdAndUpdate(req.userId, { refreshToken: null });
+    if (req.userId)
+      await User.findByIdAndUpdate(req.userId, { refreshToken: null });
 
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
@@ -482,7 +524,10 @@ exports.logout = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.userId); // comes from authenticateJWT
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
@@ -494,14 +539,19 @@ exports.getUserProfile = async (req, res) => {
 exports.checkUserByPhoneNumber = async (req, res) => {
   try {
     const { phone_Number } = req.body;
-    if (!phone_Number) return res.status(400).json({ success: false, message: "Phone number is required" });
+    if (!phone_Number)
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone number is required" });
 
     const user = await User.findOne({ phone_Number });
-    if (!user) return res.status(404).json({ success: false, message: "User does not exist" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User does not exist" });
 
     res.status(200).json({ success: true, message: "User exists", data: user });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
