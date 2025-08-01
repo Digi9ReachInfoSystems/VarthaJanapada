@@ -18,6 +18,9 @@ const notificationRoutes = require("./src/routes/notificationRoutes");
 const magazineRoutes2 = require("./src/routes/magazineRoutes2");
 const wishlistRoutes = require("./src/routes/wishlistRoutes");
 const announcement = require("./src/routes/announcementRoutes");
+const readingHistoryRoutes = require("./src/routes/readingHistoryRoutes");
+const recommendationRoutes = require("./src/routes/recommendationRoutes");
+const analyticsRoutes = require("./src/routes/analyticsRoutes");
 const searchContent = require("./src/routes/searchRoutes");
 dotenv.config();
 
@@ -26,8 +29,8 @@ const port = process.env.PORT || 3000;
 
 const corsOptions = {
   origin: [
-    "https://diprwebapp.gully2global.in",   // already allowed
-    "https://dipradmin.gully2global.in",    // ✅ now also allowed
+    "https://diprwebapp.gully2global.in",   
+    "https://dipradmin.gully2global.in",   
     "https://dipr.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
@@ -55,6 +58,9 @@ app.use("/notifications", notificationRoutes);
 app.use("/api/magazine2", magazineRoutes2);
 app.use("/wishlist", wishlistRoutes);
 app.use("/announcement", announcement);
+app.use("/api/reading-history", readingHistoryRoutes);
+app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/search", searchContent);
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
