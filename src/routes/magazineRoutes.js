@@ -15,4 +15,5 @@ router.put("/approveMagazine/:id",authenticateJWT, allowedRoles(['admin']), maga
 router.get("/getMagazineHistory/:id",magazineController.getMagazineHistory);
 router.post("/revertmagazine/:id/revert/:versionNumber", magazineController.revertMagazineToVersion);
 router.delete("/deleteMagazine1Version/:id/delete/:versionNumber", magazineController.deleteMagazineVersion);
+router.get("/by-year/:year", magazineController.getMagazinesByYear);
 module.exports = router;

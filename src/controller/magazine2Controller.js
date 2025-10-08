@@ -55,6 +55,9 @@ const createMagazine = async (req, res) => {
         title: translations.find((t) => t.language === "hi").title,
         description: translations.find((t) => t.language === "hi").description,
       },
+      publishedDate: req.body.publishedDate,
+      publishedMonth: req.body.publishedMonth,
+      publishedYear: req.body.publishedYear,
       magazineThumbnail: req.body.magazineThumbnail,
       magazinePdf: req.body.magazinePdf,
       editionNumber: req.body.editionNumber,
@@ -394,7 +397,47 @@ const deleteMagazine = async (req, res) => {
 };
 
 
+const getMagazinesByYear = async (req, res) => {
+  try {
+    const { year } = req.params;
+    console.log("year", year);
+
+    // ✅ Validate year format (must be 4 digits)
+    if (!/^\d{4}$/.test(year)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid year format. Use YYYY (e.g., 2025)",
+      });
+    }
+
+    // ✅ Find all magazines where publishedYear matches the requested year
+    const magazines = await Magazine.find({ publishedYear: year })
+      .sort({ createdTime: -1 })
+      .populate("createdBy", "displayName email role");
+
+    if (!magazines.length) {
+      return res.status(404).json({
+        success: false,
+        message: `No magazines found for year ${year}`,
+        data: [],
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: magazines.length,
+      data: magazines,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
+  getMagazinesByYear,
   createMagazine,
   getMagazines,
   getMagazineById,

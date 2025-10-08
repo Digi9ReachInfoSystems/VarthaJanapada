@@ -10,6 +10,29 @@ const mongoose = require("mongoose");
 const NewsVersion = require("../models/newsVersionModel");
 
 
+function normalizeMagazineType(input) {
+  if (input == null) return undefined;
+  const s = String(input).trim().toLowerCase();
+  if (s === "magazine" || s === "mag") return "magazine";
+  if (s === "magazine2" || s === "mag2") return "magazine2";
+  return "invalid";
+}
+
+
+function normalizeNewsType(input) {
+  if (input == null) return undefined;
+  const s = String(input).trim().toLowerCase();
+
+  // Accept a few common aliases; store canonical value
+  if (["statenews", "state", "state_news"].includes(s)) return "statenews";
+  if (["districtnews", "district", "district_news"].includes(s)) return "districtnews";
+  if (["specialnews", "special", "special_news"].includes(s)) return "specialnews";
+
+  return "invalid";
+}
+
+
+
 
 const base64Key = process.env.GOOGLE_APPLICATION_KEY;
 if (!base64Key) {
@@ -41,6 +64,22 @@ exports.createNews = async (req, res) => {
           .status(400)
           .json({ success: false, message: "One or more tags are invalid" });
       }
+    }
+
+       const normalizedMagazine = normalizeMagazineType(newsData.magazineType);
+    if (normalizedMagazine === "invalid") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+      });
+    }
+
+    const normalizedNews = normalizeNewsType(newsData.newsType);
+    if (normalizedNews === "invalid") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+      });
     }
 
     // Translate the title and description into Hindi, Kannada, and English
@@ -91,6 +130,8 @@ exports.createNews = async (req, res) => {
       ...newsData,
       category,
       tags,
+       magazineType: normalizedMagazine,
+      newsType: normalizedNews, 
       hindi: {
         title: hindiTitle,
         description: hindiDescription,
@@ -195,29 +236,79 @@ exports.getNewsById = async (req, res) => {
 
 exports.updateNews = async (req, res) => {
   try {
-    const { category, tags, hindi, kannada, English, ...updateData } = req.body;
+    const { category, tags, hindi, kannada, English, magazineType, newsType, ...updateData } = req.body;
 
     const news = await News.findById(req.params.id);
     if (!news) return res.status(404).json({ success: false, message: "News not found" });
 
-    // STEP 1: Create a snapshot BEFORE changes are made
+    // 1) Version snapshot BEFORE mutation
     const versionCount = await NewsVersion.countDocuments({ newsId: news._id });
     await NewsVersion.create({
       newsId: news._id,
       updatedBy: req.user.id,
       versionNumber: versionCount + 1,
-      snapshot: news.toObject(), // snapshot BEFORE mutation
+      snapshot: news.toObject(),
     });
 
-    // STEP 2: Apply updates
-    if (hindi) news.hindi = { ...news.hindi, ...hindi };
+    // 2) Optional: validate category
+    if (category) {
+      const categoryExists = await Category.findById(category);
+      if (!categoryExists) {
+        return res.status(400).json({ success: false, message: "Invalid category ID" });
+      }
+      news.category = category;
+    }
+
+    // 3) Optional: validate tags
+    if (Array.isArray(tags)) {
+      const existingTags = await Tags.find({ _id: { $in: tags } });
+      if (existingTags.length !== tags.length) {
+        return res.status(400).json({ success: false, message: "One or more tags are invalid" });
+      }
+      news.tags = tags;
+    }
+
+    // 4) Normalize + validate magazineType/newsType; allow clearing with null
+    if (typeof magazineType !== "undefined") {
+      const normalizedMagazine = normalizeMagazineType(magazineType);
+      if (normalizedMagazine === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+        });
+      }
+      if (normalizedMagazine === undefined) {
+        news.magazineType = undefined; // clear
+      } else {
+        news.magazineType = normalizedMagazine;
+      }
+    }
+
+    if (typeof newsType !== "undefined") {
+      const normalizedNews = normalizeNewsType(newsType);
+      if (normalizedNews === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+        });
+      }
+      if (normalizedNews === undefined) {
+        news.newsType = undefined; // clear
+      } else {
+        news.newsType = normalizedNews;
+      }
+    }
+
+    // 5) Patch language blocks (partial allowed)
+    if (hindi)   news.hindi   = { ...news.hindi,   ...hindi };
     if (kannada) news.kannada = { ...news.kannada, ...kannada };
     if (English) news.English = { ...news.English, ...English };
-    if (category) news.category = category;
-    if (tags) news.tags = tags;
 
+    // 6) Remaining fields (title, description, isLive, author, etc.)
     Object.assign(news, updateData);
-    news.isLive = true;
+
+    // 7) Status & bookkeeping
+    news.isLive = true; // your current behavior
     news.last_updated = new Date();
     news.status = req.user.role === "admin" ? "approved" : "pending";
     news.createdBy = req.user.id;
@@ -229,6 +320,7 @@ exports.updateNews = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 

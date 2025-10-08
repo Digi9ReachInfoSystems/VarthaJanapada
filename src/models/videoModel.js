@@ -17,6 +17,20 @@ const videoSchema = new mongoose.Schema({
     title: { type: String },
     description: { type: String },
   },
+
+  magazineType: {
+    type: String,
+    enum: ["magazine", "magazine2"], // must match model names exactly
+  },
+  // magazine: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   refPath: "magazineType", // polymorphic reference
+  // },
+  newsType: {
+    type: String,
+    enum: ["statenews", "districtnews", "specialnews"],
+  },
+
   likedBy: [
     {
       type: mongoose.Schema.Types.ObjectId,
