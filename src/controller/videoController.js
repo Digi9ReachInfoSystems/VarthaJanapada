@@ -3,6 +3,29 @@ const Comment = require("../models/commentsModel");
 const VideoVersion = require("../models/videoVersionModel");
 
 
+function normalizeMagazineType(input) {
+  if (input == null) return undefined;
+  const s = String(input).trim().toLowerCase();
+  if (s === "magazine" || s === "mag") return "magazine";
+  if (s === "magazine2" || s === "mag2") return "magazine2";
+  return "invalid";
+}
+
+
+function normalizeNewsType(input) {
+  if (input == null) return undefined;
+  const s = String(input).trim().toLowerCase();
+
+  // Accept a few common aliases; store canonical value
+  if (["statenews", "state", "state_news"].includes(s)) return "statenews";
+  if (["districtnews", "district", "district_news"].includes(s)) return "districtnews";
+  if (["specialnews", "special", "special_news"].includes(s)) return "specialnews";
+
+  return "invalid";
+}
+
+
+
 const { Translate } = require("@google-cloud/translate").v2;
 
 const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
@@ -17,68 +40,137 @@ const credentials = JSON.parse(
 
 const translate = new Translate({ credentials });
 
+
+// exports.uploadVideo = async (req, res) => {
+//   try {
+//     const { title, description, thumbnail, video_url, category } = req.body;
+
+//     // Validate required fields
+//     if (!title || !description || !thumbnail || !video_url || !category) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Please provide all required fields: title, description, videoThumbnail, videoUrl, category",
+//       });
+//     }
+
+//     // Define the target languages for translation
+//     const targetLanguages = ["en", "kn", "hi"]; // English, Kannada, Hindi
+
+//     // Translate the title and description into each language individually
+//     const titleTranslations = await Promise.all(
+//       targetLanguages.map(async (lang) => {
+//         return await translate.translate(title, lang);
+//       })
+//     );
+
+//     const descriptionTranslations = await Promise.all(
+//       targetLanguages.map(async (lang) => {
+//         return await translate.translate(description, lang);
+//       })
+//     );
+
+//     // Create a new video object with the translations
+//     const newVideo = new Videos({
+//       title, // Original title
+//       description, // Original description
+//       english: {
+//         title: titleTranslations[0][0], // English translation of the title
+//         description: descriptionTranslations[0][0], // English translation of description
+//       },
+//       kannada: {
+//         title: titleTranslations[1][0], // Kannada translation of the title
+//         description: descriptionTranslations[1][0], // Kannada translation of description
+//       },
+//       hindi: {
+//         title: titleTranslations[2][0], // Hindi translation of the title
+//         description: descriptionTranslations[2][0], // Hindi translation of description
+//       },
+//       thumbnail,
+//       video_url,
+//       category, // Assuming 'category' is passed in the request body
+//       videoDuration: req.body.videoDuration, // Optional, if provided
+//       last_updated: new Date(),
+//       createdBy: req.user.id,
+//       status: req.user.role === "admin" ? "approved" : "pending",
+//     });
+//     console.log(newVideo);
+//     // Save the new video to the database
+//     const savedVideo = await newVideo.save();
+
+//     res.status(201).json({ success: true, data: savedVideo });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// controllers/videoController.js
+// controllers/videoController.js
+
 exports.uploadVideo = async (req, res) => {
   try {
-    const { title, description, thumbnail, video_url, category } = req.body;
+    const { title, description, thumbnail, video_url, category, magazineType, newsType } = req.body;
 
-    // Validate required fields
     if (!title || !description || !thumbnail || !video_url || !category) {
       return res.status(400).json({
         success: false,
-        message:
-          "Please provide all required fields: title, description, videoThumbnail, videoUrl, category",
+        message: "Please provide: title, description, thumbnail, video_url, category",
       });
     }
 
-    // Define the target languages for translation
-    const targetLanguages = ["en", "kn", "hi"]; // English, Kannada, Hindi
+    // 🔹 validate magazineType tag (optional)
+    const normalizedMagazine = normalizeMagazineType(magazineType);
+    if (normalizedMagazine === "invalid") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+      });
+    }
 
-    // Translate the title and description into each language individually
-    const titleTranslations = await Promise.all(
-      targetLanguages.map(async (lang) => {
-        return await translate.translate(title, lang);
-      })
-    );
+    // 🔹 validate newsType tag (optional)
+    const normalizedNews = normalizeNewsType(newsType);
+    if (normalizedNews === "invalid") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+      });
+    }
 
-    const descriptionTranslations = await Promise.all(
-      targetLanguages.map(async (lang) => {
-        return await translate.translate(description, lang);
-      })
-    );
+    // translations (unchanged)
+    const targetLanguages = ["en", "kn", "hi"];
+    const [titleTranslations, descriptionTranslations] = await Promise.all([
+      Promise.all(targetLanguages.map((lang) => translate.translate(title, lang))),
+      Promise.all(targetLanguages.map((lang) => translate.translate(description, lang))),
+    ]);
 
-    // Create a new video object with the translations
     const newVideo = new Videos({
-      title, // Original title
-      description, // Original description
-      english: {
-        title: titleTranslations[0][0], // English translation of the title
-        description: descriptionTranslations[0][0], // English translation of description
-      },
-      kannada: {
-        title: titleTranslations[1][0], // Kannada translation of the title
-        description: descriptionTranslations[1][0], // Kannada translation of description
-      },
-      hindi: {
-        title: titleTranslations[2][0], // Hindi translation of the title
-        description: descriptionTranslations[2][0], // Hindi translation of description
-      },
+      title,
+      description,
+      english: { title: titleTranslations[0][0], description: descriptionTranslations[0][0] },
+      kannada: { title: titleTranslations[1][0], description: descriptionTranslations[1][0] },
+      hindi: { title: titleTranslations[2][0], description: descriptionTranslations[2][0] },
       thumbnail,
       video_url,
-      category, // Assuming 'category' is passed in the request body
-      videoDuration: req.body.videoDuration, // Optional, if provided
+      category,
+      videoDuration: req.body.videoDuration,
       last_updated: new Date(),
       createdBy: req.user.id,
       status: req.user.role === "admin" ? "approved" : "pending",
+      magazineType: normalizedMagazine,   // undefined if not provided
+      newsType: normalizedNews,           // undefined if not provided
     });
-    console.log(newVideo);
-    // Save the new video to the database
-    const savedVideo = await newVideo.save();
 
+    const savedVideo = await newVideo.save();
     res.status(201).json({ success: true, data: savedVideo });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+
+
 exports.getAllVideos = async (req, res) => {
   try {
     const videos = await Videos.find().populate({
@@ -228,6 +320,132 @@ exports.getMostLikedVideo = async (req, res) => {
   }
 };
 
+// exports.updateVideo = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const {
+//       title,
+//       description,
+//       thumbnail,
+//       video_url,
+//       category,
+//       videoDuration,
+//     } = req.body;
+
+//     // Find the existing video
+//     const existingVideo = await Videos.findById(id);
+//     if (!existingVideo) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Video not found",
+//       });
+//     }
+
+//     // Check if the user is the creator, moderator, or admin
+//     const isCreator = existingVideo.createdBy?.toString() === req.user.id;
+//     const isAdmin = req.user.role === "admin";
+//     const isModerator = req.user.role === "moderator";
+
+//     if (!isCreator && !isAdmin && !isModerator) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Not authorized to update this video",
+//       });
+//     }
+
+//     // STEP 1: Save a version snapshot BEFORE updating
+//     const latestVersion = await VideoVersion.find({ videoId: id })
+//       .sort({ versionNumber: -1 })
+//       .limit(1);
+
+//     const nextVersionNumber = latestVersion.length > 0
+//       ? latestVersion[0].versionNumber + 1
+//       : 1;
+
+//     const snapshot = {
+//       title: existingVideo.title,
+//       description: existingVideo.description,
+//       english: existingVideo.english,
+//       kannada: existingVideo.kannada,
+//       hindi: existingVideo.hindi,
+//       thumbnail: existingVideo.thumbnail,
+//       video_url: existingVideo.video_url,
+//       category: existingVideo.category,
+//       videoDuration: existingVideo.videoDuration,
+//     };
+
+//     await VideoVersion.create({
+//       videoId: existingVideo._id,
+//       versionNumber: nextVersionNumber,
+//       updatedBy: req.user.id,
+//       snapshot,
+//     });
+
+//     // STEP 2: Define update fields
+//     const updateFields = {
+//       last_updated: new Date(),
+//       videoDuration: videoDuration || existingVideo.videoDuration,
+//     };
+
+//     // STEP 3: Translate if title or description is changed
+//     if (title || description) {
+//       const targetLanguages = ["en", "kn", "hi"];
+//       const titleToTranslate = title || existingVideo.title;
+//       const descToTranslate = description || existingVideo.description;
+
+//       const [titleTranslations, descriptionTranslations] = await Promise.all([
+//         Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
+//         Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
+//       ]);
+
+//       updateFields.title = title || existingVideo.title;
+//       updateFields.description = description || existingVideo.description;
+//       updateFields.english = {
+//         title: titleTranslations[0][0],
+//         description: descriptionTranslations[0][0],
+//       };
+//       updateFields.kannada = {
+//         title: titleTranslations[1][0],
+//         description: descriptionTranslations[1][0],
+//       };
+//       updateFields.hindi = {
+//         title: titleTranslations[2][0],
+//         description: descriptionTranslations[2][0],
+//       };
+//     }
+
+//     // STEP 4: Update other fields
+//     if (thumbnail) updateFields.thumbnail = thumbnail;
+//     if (video_url) updateFields.video_url = video_url;
+//     if (category) updateFields.category = category;
+
+//     // STEP 5: Set approval status based on role
+//     if (isAdmin) {
+//       updateFields.status = "approved";
+//     } else if (isModerator || isCreator) {
+//       updateFields.status = "pending";
+//     }
+
+//     // STEP 6: Perform the update
+//     const updatedVideo = await Videos.findByIdAndUpdate(
+//       id,
+//       { $set: updateFields },
+//       { new: true, runValidators: true }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       data: updatedVideo,
+//       message: isAdmin
+//         ? "Video updated and approved"
+//         : "Video updated, awaiting admin approval",
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
 exports.updateVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,64 +456,58 @@ exports.updateVideo = async (req, res) => {
       video_url,
       category,
       videoDuration,
+      magazineType, // optional tag: "magazine" | "magazine2" | null
+      newsType,     // optional tag: "statenews" | "districtnews" | "specialnews" | null
     } = req.body;
 
-    // Find the existing video
+    // 1) Find the existing video
     const existingVideo = await Videos.findById(id);
     if (!existingVideo) {
-      return res.status(404).json({
-        success: false,
-        message: "Video not found",
-      });
+      return res.status(404).json({ success: false, message: "Video not found" });
     }
 
-    // Check if the user is the creator, moderator, or admin
+    // 2) AuthZ
     const isCreator = existingVideo.createdBy?.toString() === req.user.id;
     const isAdmin = req.user.role === "admin";
     const isModerator = req.user.role === "moderator";
-
     if (!isCreator && !isAdmin && !isModerator) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this video",
-      });
+      return res.status(403).json({ success: false, message: "Not authorized to update this video" });
     }
 
-    // STEP 1: Save a version snapshot BEFORE updating
+    // 3) Version snapshot (BEFORE changes)
     const latestVersion = await VideoVersion.find({ videoId: id })
       .sort({ versionNumber: -1 })
       .limit(1);
-
-    const nextVersionNumber = latestVersion.length > 0
-      ? latestVersion[0].versionNumber + 1
-      : 1;
-
-    const snapshot = {
-      title: existingVideo.title,
-      description: existingVideo.description,
-      english: existingVideo.english,
-      kannada: existingVideo.kannada,
-      hindi: existingVideo.hindi,
-      thumbnail: existingVideo.thumbnail,
-      video_url: existingVideo.video_url,
-      category: existingVideo.category,
-      videoDuration: existingVideo.videoDuration,
-    };
+    const nextVersionNumber = latestVersion.length ? latestVersion[0].versionNumber + 1 : 1;
 
     await VideoVersion.create({
       videoId: existingVideo._id,
       versionNumber: nextVersionNumber,
       updatedBy: req.user.id,
-      snapshot,
+      snapshot: {
+        title: existingVideo.title,
+        description: existingVideo.description,
+        english: existingVideo.english,
+        kannada: existingVideo.kannada,
+        hindi: existingVideo.hindi,
+        thumbnail: existingVideo.thumbnail,
+        video_url: existingVideo.video_url,
+        category: existingVideo.category,
+        videoDuration: existingVideo.videoDuration,
+        magazineType: existingVideo.magazineType,
+        newsType: existingVideo.newsType,
+      },
     });
 
-    // STEP 2: Define update fields
+    // 4) Build update fields
     const updateFields = {
       last_updated: new Date(),
-      videoDuration: videoDuration || existingVideo.videoDuration,
+      // preserve existing if not provided (avoid overwriting with undefined)
+      videoDuration:
+        typeof videoDuration !== "undefined" ? videoDuration : existingVideo.videoDuration,
     };
 
-    // STEP 3: Translate if title or description is changed
+    // 5) Translate if title or description changed
     if (title || description) {
       const targetLanguages = ["en", "kn", "hi"];
       const titleToTranslate = title || existingVideo.title;
@@ -322,34 +534,67 @@ exports.updateVideo = async (req, res) => {
       };
     }
 
-    // STEP 4: Update other fields
+    // 6) Other simple fields
     if (thumbnail) updateFields.thumbnail = thumbnail;
     if (video_url) updateFields.video_url = video_url;
     if (category) updateFields.category = category;
 
-    // STEP 5: Set approval status based on role
-    if (isAdmin) {
-      updateFields.status = "approved";
-    } else if (isModerator || isCreator) {
-      updateFields.status = "pending";
+    // 7) Validate & set/clear magazineType tag (matches your enum: "magazine" | "magazine2")
+    if (typeof magazineType !== "undefined") {
+      const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
+      if (normalizedMagazine === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+        });
+      }
+      if (normalizedMagazine === undefined) {
+        // explicit clear (e.g., sending null)
+        updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
+      } else {
+        updateFields.magazineType = normalizedMagazine;
+      }
     }
 
-    // STEP 6: Perform the update
-    const updatedVideo = await Videos.findByIdAndUpdate(
-      id,
-      { $set: updateFields },
-      { new: true, runValidators: true }
-    );
+    // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
+    if (typeof newsType !== "undefined") {
+      const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
+      if (normalizedNews === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+        });
+      }
+      if (normalizedNews === undefined) {
+        updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
+      } else {
+        updateFields.newsType = normalizedNews;
+      }
+    }
 
-    res.status(200).json({
+    // 9) Role-based status
+    if (isAdmin) updateFields.status = "approved";
+    else if (isModerator || isCreator) updateFields.status = "pending";
+
+    // 10) Apply update
+    const updateOps = { $set: updateFields };
+    if (updateFields.$unset) {
+      updateOps.$unset = updateFields.$unset;
+      delete updateFields.$unset;
+    }
+
+    const updatedVideo = await Videos.findByIdAndUpdate(id, updateOps, {
+      new: true,
+      runValidators: true,
+    });
+
+    return res.status(200).json({
       success: true,
       data: updatedVideo,
-      message: isAdmin
-        ? "Video updated and approved"
-        : "Video updated, awaiting admin approval",
+      message: isAdmin ? "Video updated and approved" : "Video updated, awaiting admin approval",
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

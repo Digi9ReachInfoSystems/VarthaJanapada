@@ -5,6 +5,28 @@ const LongVideoVersion = require("../models/longVideoVersionModel");
 
 const { Translate } = require("@google-cloud/translate").v2;
 
+function normalizeMagazineType(input) {
+  if (input == null) return undefined;
+  const s = String(input).trim().toLowerCase();
+  if (s === "magazine" || s === "mag") return "magazine";
+  if (s === "magazine2" || s === "mag2") return "magazine2";
+  return "invalid";
+}
+
+
+function normalizeNewsType(input) {
+  if (input == null) return undefined;
+  const s = String(input).trim().toLowerCase();
+
+  // Accept a few common aliases; store canonical value
+  if (["statenews", "state", "state_news"].includes(s)) return "statenews";
+  if (["districtnews", "district", "district_news"].includes(s)) return "districtnews";
+  if (["specialnews", "special", "special_news"].includes(s)) return "specialnews";
+
+  return "invalid";
+}
+
+
 const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
 if (!base64Key) {
   throw new Error(
@@ -18,7 +40,7 @@ const credentials = JSON.parse(
 const translate = new Translate({ credentials });
 exports.uploadVideo = async (req, res) => {
   try {
-    const { title, description, thumbnail, video_url, category } = req.body;
+    const { title, description, thumbnail, video_url, category, magazineType, newsType } = req.body;
 
     // Validate required fields
     if (!title || !description || !thumbnail || !video_url || !category) {
@@ -26,6 +48,23 @@ exports.uploadVideo = async (req, res) => {
         success: false,
         message:
           "Please provide all required fields: title, description, videoThumbnail, videoUrl, category",
+      });
+    }
+
+        const normalizedMagazine = normalizeMagazineType(magazineType);
+    if (normalizedMagazine === "invalid") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+      });
+    }
+
+    // 🔹 validate newsType tag (optional)
+    const normalizedNews = normalizeNewsType(newsType);
+    if (normalizedNews === "invalid") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
       });
     }
 
@@ -68,6 +107,8 @@ exports.uploadVideo = async (req, res) => {
       last_updated: new Date(),
       createdBy: req.user.id,
       status: req.user.role === "admin" ? "approved" : "pending",
+        magazineType: normalizedMagazine,  
+      newsType: normalizedNews,    
     });
 
     // Save the new video to the database
@@ -258,6 +299,8 @@ exports.updateLongVideo = async (req, res) => {
       video_url,
       category,
       videoDuration,
+        magazineType, 
+      newsType,
     } = req.body;
 
     // Validate video ID
@@ -348,6 +391,40 @@ exports.updateLongVideo = async (req, res) => {
     if (video_url) updateFields.video_url = video_url;
     if (category) updateFields.category = category;
     if (videoDuration) updateFields.videoDuration = videoDuration;
+
+     if (typeof magazineType !== "undefined") {
+      const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
+      if (normalizedMagazine === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+        });
+      }
+      if (normalizedMagazine === undefined) {
+        // explicit clear (e.g., sending null)
+        updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
+      } else {
+        updateFields.magazineType = normalizedMagazine;
+      }
+    }
+
+    // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
+    if (typeof newsType !== "undefined") {
+      const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
+      if (normalizedNews === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+        });
+      }
+      if (normalizedNews === undefined) {
+        updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
+      } else {
+        updateFields.newsType = normalizedNews;
+      }
+    }
+
+    
 
     // Set approval status based on user role
     if (isAdmin) {

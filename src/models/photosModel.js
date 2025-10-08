@@ -1,0 +1,28 @@
+
+const mongoose = require("mongoose");
+
+const photosSchema = new mongoose.Schema({
+
+  photoImage: {
+    type: String,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    // required: true,
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
+  createdTime: {
+    type: Date,
+    default: Date.now,
+  },
+  last_updated: {
+    type: Date,
+  },
+});
+
+module.exports = mongoose.model("Photos", photosSchema);

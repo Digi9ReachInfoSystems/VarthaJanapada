@@ -10,6 +10,16 @@ const newsSchema = new mongoose.Schema({
     default: false,
   },
 
+  magazineType: {
+    type: String,
+    enum: ["magazine", "magazine2"], 
+  },
+
+  newsType: {
+    type: String,
+    enum: ["statenews", "districtnews", "specialnews"],
+  },
+
   description: {
     type: String,
     required: true,

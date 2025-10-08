@@ -22,6 +22,9 @@ const readingHistoryRoutes = require("./src/routes/readingHistoryRoutes");
 const recommendationRoutes = require("./src/routes/recommendationRoutes");
 const analyticsRoutes = require("./src/routes/analyticsRoutes");
 const searchContent = require("./src/routes/searchRoutes");
+const photoRoutes = require("./src/routes/photosRoutes");
+const staticRoutes = require("./src/routes/staticpageRoutes");
+
 dotenv.config();
 
 const app = express();
@@ -62,6 +65,9 @@ app.use("/api/reading-history", readingHistoryRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/search", searchContent);
+app.use("/api/photos", photoRoutes);
+app.use("/api/static", staticRoutes);
+
 app.get("/", (req, res) => {
   res.send("Server running!");
 })
