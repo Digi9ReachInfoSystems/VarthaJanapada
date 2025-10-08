@@ -4,7 +4,7 @@ const videoController = require("../controller/longVideoController");
 const authenticateJWT = require("../middleware/authenticateRole");
 const allowedRoles = require("../middleware/allowedRole");
 
-
+///long video 
 router.post("/upload",authenticateJWT, allowedRoles(['admin', 'moderator']), videoController.uploadVideo);
 router.post("/approveVideo/:id",authenticateJWT, allowedRoles(['admin']), videoController.approveLongVideo);
 router.put("/update/:id",authenticateJWT, allowedRoles(['admin', 'moderator']), videoController.updateLongVideo);

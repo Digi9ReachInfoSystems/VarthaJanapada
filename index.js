@@ -62,6 +62,9 @@ app.use("/api/reading-history", readingHistoryRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/search", searchContent);
+app.get("/", (req, res) => {
+  res.send("Server running!");
+})
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
