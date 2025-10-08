@@ -7,7 +7,7 @@ const allowedRoles = require("../middleware/allowedRole");
 router.post("/createBanner",authenticateJWT,allowedRoles(['admin','moderator']), bannerController.createBanner);
 router.get("/", bannerController.getAllBanners);
 router.delete("/deleteBanner/:id",authenticateJWT, allowedRoles(['admin']), bannerController.deleteBanner);
-router.put("/updateBanner/:id", authenticateJWT, allowedRoles(['admin', 'moderator']), bannerController.updateBanner);
+router.patch("/updateBanner/:id", authenticateJWT, allowedRoles(['admin', 'moderator']), bannerController.updateBanner);
 router.patch("/approveBanner/:id", authenticateJWT, allowedRoles(['admin']), bannerController.approveBanner);
-
+router.get("/getBannerById/:id", bannerController.getBannerById);
 module.exports = router;
