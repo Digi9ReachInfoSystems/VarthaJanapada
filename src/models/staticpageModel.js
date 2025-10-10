@@ -2,7 +2,10 @@
 const mongoose = require("mongoose");
 
 const staicPageSchema = new mongoose.Schema({
-
+staticpageName: {
+  type: String,
+  required: true,
+},
   staticpageLink: {
     type: String,
   },

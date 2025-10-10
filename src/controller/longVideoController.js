@@ -180,13 +180,9 @@ exports.addCommentToVideo = async (req, res) => {
         .json({ success: false, message: "Invalid videoId" });
     }
 
-    // Log the videoId for debugging
-    console.log("Video ID:", videoId);
-
-    // Find the video
+   
     const video = await Videos.findById(videoId);
-    console.log("Video:", video); // Log the video for debugging
-
+   
     if (!video) {
       return res
         .status(404)
@@ -202,9 +198,7 @@ exports.addCommentToVideo = async (req, res) => {
 
     // Save the comment
     const savedComment = await newComment.save();
-    console.log("Saved Comment:", savedComment); // Log the saved comment for debugging
-
-    // Add the comment ID to the video's Comments array
+   
     video.Comments.push(savedComment._id);
     await video.save();
 
@@ -289,226 +283,244 @@ exports.approveLongVideo = async (req, res) => {
   }
 };
 
-exports.updateLongVideo = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      title,
-      description,
-      thumbnail,
-      video_url,
-      category,
-      videoDuration,
-        magazineType, 
-      newsType,
-    } = req.body;
+// exports.updateLongVideo = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const {
+//       title,
+//       description,
+//       thumbnail,
+//       video_url,
+//       category,
+//       videoDuration,
+//         magazineType, 
+//       newsType,
+//     } = req.body;
 
-    // Validate video ID
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid video ID format",
-      });
-    }
+//     // Validate video ID
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid video ID format",
+//       });
+//     }
 
-    // Find existing video
-    const existingVideo = await Videos.findById(id);
-    if (!existingVideo) {
-      return res.status(404).json({
-        success: false,
-        message: "Video not found",
-      });
-    }
+//     // Find existing video
+//     const existingVideo = await Videos.findById(id);
+//     if (!existingVideo) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Video not found",
+//       });
+//     }
 
-    const isCreator = existingVideo.createdBy?.toString() === req.user.id;
-    const isAdmin = req.user.role === "admin";
-    const isModerator = req.user.role === "moderator";
+//     const isCreator = existingVideo.createdBy?.toString() === req.user.id;
+//     const isAdmin = req.user.role === "admin";
+//     const isModerator = req.user.role === "moderator";
 
-    if (!isCreator && !isAdmin && !isModerator) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this video",
-      });
-    }
+//     if (!isCreator && !isAdmin && !isModerator) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Not authorized to update this video",
+//       });
+//     }
 
-    // Save current version before update
-    const latestVersion = await LongVideoVersion.find({ videoId: id })
-      .sort({ versionNumber: -1 })
-      .limit(1);
-    const nextVersionNumber = latestVersion.length
-      ? latestVersion[0].versionNumber + 1
-      : 1;
+//     // Save current version before update
+//     const latestVersion = await LongVideoVersion.find({ videoId: id })
+//       .sort({ versionNumber: -1 })
+//       .limit(1);
+//     const nextVersionNumber = latestVersion.length
+//       ? latestVersion[0].versionNumber + 1
+//       : 1;
 
-    await LongVideoVersion.create({
-      videoId: id,
-      snapshot: existingVideo.toObject(),
-      versionNumber: nextVersionNumber,
-      updatedBy: req.user.id,
-      updatedAt: new Date(),
-    });
+//     await LongVideoVersion.create({
+//       videoId: id,
+//       snapshot: existingVideo.toObject(),
+//       versionNumber: nextVersionNumber,
+//       updatedBy: req.user.id,
+//       updatedAt: new Date(),
+//     });
 
-    // Prepare update object
-    const updateFields = {
-      last_updated: new Date(),
-    };
+//     // Prepare update object
+//     const updateFields = {
+//       last_updated: new Date(),
+//     };
 
-    // Translation logic
-    if (title || description) {
-      const targetLanguages = ["en", "kn", "hi"];
-      const titleToTranslate = title || existingVideo.title;
-      const descToTranslate = description || existingVideo.description;
+//     // Translation logic
+//     if (title || description) {
+//       const targetLanguages = ["en", "kn", "hi"];
+//       const titleToTranslate = title || existingVideo.title;
+//       const descToTranslate = description || existingVideo.description;
 
-      const [titleTranslations, descriptionTranslations] = await Promise.all([
-        Promise.all(
-          targetLanguages.map((lang) =>
-            translate.translate(titleToTranslate, lang)
-          )
-        ),
-        Promise.all(
-          targetLanguages.map((lang) =>
-            translate.translate(descToTranslate, lang)
-          )
-        ),
-      ]);
+//       const [titleTranslations, descriptionTranslations] = await Promise.all([
+//         Promise.all(
+//           targetLanguages.map((lang) =>
+//             translate.translate(titleToTranslate, lang)
+//           )
+//         ),
+//         Promise.all(
+//           targetLanguages.map((lang) =>
+//             translate.translate(descToTranslate, lang)
+//           )
+//         ),
+//       ]);
 
-      updateFields.title = title || existingVideo.title;
-      updateFields.description = description || existingVideo.description;
-      updateFields.english = {
-        title: titleTranslations[0][0],
-        description: descriptionTranslations[0][0],
-      };
-      updateFields.kannada = {
-        title: titleTranslations[1][0],
-        description: descriptionTranslations[1][0],
-      };
-      updateFields.hindi = {
-        title: titleTranslations[2][0],
-        description: descriptionTranslations[2][0],
-      };
-    }
+//       updateFields.title = title || existingVideo.title;
+//       updateFields.description = description || existingVideo.description;
+//       updateFields.english = {
+//         title: titleTranslations[0][0],
+//         description: descriptionTranslations[0][0],
+//       };
+//       updateFields.kannada = {
+//         title: titleTranslations[1][0],
+//         description: descriptionTranslations[1][0],
+//       };
+//       updateFields.hindi = {
+//         title: titleTranslations[2][0],
+//         description: descriptionTranslations[2][0],
+//       };
+//     }
 
-    if (thumbnail) updateFields.thumbnail = thumbnail;
-    if (video_url) updateFields.video_url = video_url;
-    if (category) updateFields.category = category;
-    if (videoDuration) updateFields.videoDuration = videoDuration;
+//     if (thumbnail) updateFields.thumbnail = thumbnail;
+//     if (video_url) updateFields.video_url = video_url;
+//     if (category) updateFields.category = category;
+//     if (videoDuration) updateFields.videoDuration = videoDuration;
 
-     if (typeof magazineType !== "undefined") {
-      const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
-      if (normalizedMagazine === "invalid") {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
-        });
-      }
-      if (normalizedMagazine === undefined) {
-        // explicit clear (e.g., sending null)
-        updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
-      } else {
-        updateFields.magazineType = normalizedMagazine;
-      }
-    }
+//      if (typeof magazineType !== "undefined") {
+//       const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
+//       if (normalizedMagazine === "invalid") {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+//         });
+//       }
+//       if (normalizedMagazine === undefined) {
+//         // explicit clear (e.g., sending null)
+//         updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
+//       } else {
+//         updateFields.magazineType = normalizedMagazine;
+//       }
+//     }
 
-    // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
-    if (typeof newsType !== "undefined") {
-      const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
-      if (normalizedNews === "invalid") {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
-        });
-      }
-      if (normalizedNews === undefined) {
-        updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
-      } else {
-        updateFields.newsType = normalizedNews;
-      }
-    }
+//     // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
+//     if (typeof newsType !== "undefined") {
+//       const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
+//       if (normalizedNews === "invalid") {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+//         });
+//       }
+//       if (normalizedNews === undefined) {
+//         updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
+//       } else {
+//         updateFields.newsType = normalizedNews;
+//       }
+//     }
 
     
 
-    // Set approval status based on user role
-    if (isAdmin) {
-      updateFields.status = "approved";
-    } else {
-      const contentChanged =
-        title || description || thumbnail || video_url || category;
-      updateFields.status = contentChanged ? "pending" : existingVideo.status;
-    }
+//     // Set approval status based on user role
+//     if (isAdmin) {
+//       updateFields.status = "approved";
+//     } else {
+//       const contentChanged =
+//         title || description || thumbnail || video_url || category;
+//       updateFields.status = contentChanged ? "pending" : existingVideo.status;
+//     }
 
-    // Perform the update
-    const updatedVideo = await Videos.findByIdAndUpdate(
-      id,
-      { $set: updateFields },
-      { new: true, runValidators: true }
-    );
+//     // Perform the update
+//     const updatedVideo = await Videos.findByIdAndUpdate(
+//       id,
+//       { $set: updateFields },
+//       { new: true, runValidators: true }
+//     );
 
-    res.status(200).json({
-      success: true,
-      data: updatedVideo,
-      message: isAdmin
-        ? "Video updated and approved"
-        : "Video updated, awaiting admin approval",
-    });
-  } catch (error) {
-    console.error("Update error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       data: updatedVideo,
+//       message: isAdmin
+//         ? "Video updated and approved"
+//         : "Video updated, awaiting admin approval",
+//     });
+//   } catch (error) {
+//     console.error("Update error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//       error: process.env.NODE_ENV === "development" ? error.stack : undefined,
+//     });
+//   }
+// };
 
-exports.getLongVideoHistory = async (req, res) => {
-  try {
-    const { id } = req.params;
+// exports.getLongVideoHistory = async (req, res) => {
+//   try {
+//     const { id } = req.params;
 
-    const versions = await LongVideoVersion.find({ videoId: id })
-      .populate("updatedBy", "displayName email")
-      .sort({ versionNumber: -1 });
+//     const versions = await LongVideoVersion.find({ videoId: id })
+//       .populate("updatedBy", "displayName email")
+//       .sort({ versionNumber: -1 });
 
-    if (!versions.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No version history found" });
-    }
+//     if (!versions.length) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "No version history found" });
+//     }
 
-    res.status(200).json({ success: true, data: versions });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+//     res.status(200).json({ success: true, data: versions });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 
-exports.revertLongVideoToVersion = async (req, res) => {
-  try {
-    const { id, versionNumber } = req.params;
-    const currentVersionNumber = parseInt(versionNumber);
-    const targetVersionNumber = currentVersionNumber - 1;
 
-    const targetVersion = await LongVideoVersion.findOne({
-      videoId: id,
-      versionNumber: targetVersionNumber,
-    });
+// exports.revertLongVideoToVersion = async (req, res) => {
+//   try {
+//     const { id, versionNumber } = req.params;
+//     const currentVersionNumber = parseInt(versionNumber);
+//     const targetVersionNumber = currentVersionNumber - 1;
 
-    if (!targetVersion) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Target version not found." });
-    }
+//     // 1) Find the target version to revert TO
+//     const targetVersion = await LongVideoVersion.findOne({
+//       videoId: id,
+//       versionNumber: targetVersionNumber,
+//     });
 
-    await LongVideoVersion.deleteOne({
-      videoId: id,
-      versionNumber: currentVersionNumber,
-    });
-    res
-      .status(200)
-      .json({ success: true, message: "Reverted and cleaned up successfully" });
-  } catch (error) {
-    console.error("Error in revertAndDeleteCurrentVersion:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+//     if (!targetVersion) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Target version not found." });
+//     }
 
+//     // 2) Restore the long video document with the target version's snapshot
+//     const restoredVideo = await Videos.findByIdAndUpdate(
+//       id,
+//       targetVersion.snapshot,
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!restoredVideo) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Long video not found." });
+//     }
+
+//     // 3) Delete the current version that we're reverting FROM
+//     await LongVideoVersion.deleteOne({
+//       videoId: id,
+//       versionNumber: currentVersionNumber,
+//     });
+
+//     res.status(200).json({ 
+//       success: true, 
+//       data: restoredVideo,
+//       message: "Reverted and cleaned up successfully" 
+//     });
+//   } catch (error) {
+//     console.error("Error in revertLongVideoToVersion:", error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 exports.deleteVideoVersioon = async (req, res) => {
   try {
     const { id, versionNumber } = req.params;
@@ -542,3 +554,257 @@ exports.deleteVideoVersioon = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.updateLongVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    // Validate video ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid video ID format",
+      });
+    }
+
+    // Find existing video
+    const existingVideo = await Videos.findById(id);
+    if (!existingVideo) {
+      return res.status(404).json({
+        success: false,
+        message: "Video not found",
+      });
+    }
+
+    const isCreator = existingVideo.createdBy?.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+    const isModerator = req.user.role === "moderator";
+
+    if (!isCreator && !isAdmin && !isModerator) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this video",
+      });
+    }
+
+    // STEP 1: Save version snapshot of CURRENT state BEFORE updates
+    const versionCount = await LongVideoVersion.countDocuments({ videoId: id });
+    const currentVersionNumber = versionCount + 1;
+    
+    await LongVideoVersion.create({
+      videoId: id,
+      versionNumber: currentVersionNumber,
+      updatedBy: req.user.id,
+      updatedAt: new Date(),
+      snapshot: {
+        title: existingVideo.title,
+        description: existingVideo.description,
+        english: existingVideo.english,
+        kannada: existingVideo.kannada,
+        hindi: existingVideo.hindi,
+        thumbnail: existingVideo.thumbnail,
+        video_url: existingVideo.video_url,
+        category: existingVideo.category,
+        videoDuration: existingVideo.videoDuration,
+        magazineType: existingVideo.magazineType,
+        newsType: existingVideo.newsType,
+        status: existingVideo.status,
+        // Include all fields that can be updated
+      },
+    });
+
+    
+    if (updatedData.title) existingVideo.title = updatedData.title;
+    if (updatedData.description) existingVideo.description = updatedData.description;
+    if (updatedData.thumbnail) existingVideo.thumbnail = updatedData.thumbnail;
+    if (updatedData.video_url) existingVideo.video_url = updatedData.video_url;
+    if (updatedData.category) existingVideo.category = updatedData.category;
+    if (updatedData.videoDuration) existingVideo.videoDuration = updatedData.videoDuration;
+
+    // Handle magazineType and newsType with validation
+    if (updatedData.magazineType !== undefined) {
+      const normalizedMagazine = normalizeMagazineType(updatedData.magazineType);
+      if (normalizedMagazine === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+        });
+      }
+      existingVideo.magazineType = normalizedMagazine;
+    }
+
+    if (updatedData.newsType !== undefined) {
+      const normalizedNews = normalizeNewsType(updatedData.newsType);
+      if (normalizedNews === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+        });
+      }
+      existingVideo.newsType = normalizedNews;
+    }
+
+    // Handle translations if title or description changed
+    if (updatedData.title || updatedData.description) {
+      const targetLanguages = ["en", "kn", "hi"];
+      const titleToTranslate = updatedData.title || existingVideo.title;
+      const descToTranslate = updatedData.description || existingVideo.description;
+
+      const [titleTranslations, descriptionTranslations] = await Promise.all([
+        Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
+        Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
+      ]);
+
+      existingVideo.english = {
+        title: titleTranslations[0][0],
+        description: descriptionTranslations[0][0],
+      };
+      existingVideo.kannada = {
+        title: titleTranslations[1][0],
+        description: descriptionTranslations[1][0],
+      };
+      existingVideo.hindi = {
+        title: titleTranslations[2][0],
+        description: descriptionTranslations[2][0],
+      };
+    }
+
+    existingVideo.last_updated = new Date();
+    
+    // Role-based status
+    if (req.user.role === "moderator") {
+      existingVideo.status = "pending";
+    } else if (req.user.role === "admin") {
+      existingVideo.status = "approved";
+    }
+
+    const updatedVideo = await existingVideo.save();
+    
+   
+    res.status(200).json({
+      success: true,
+      data: updatedVideo,
+      message: "Long video updated successfully",
+    });
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getLongVideoHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const versions = await LongVideoVersion.find({ videoId: id })
+      .populate("updatedBy", "displayName email")
+      .sort({ versionNumber: -1 });
+
+    if (!versions.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No version history found" });
+    }
+
+    // Debug: Check what titles are stored in versions
+    versions.forEach(version => {
+      // console.log(`Long Video Version ${version.versionNumber} title: ${version.snapshot.title}`);
+    });
+
+    res.status(200).json({ success: true, data: versions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// CORRECTED: Proper revert logic
+exports.revertLongVideoToVersion = async (req, res) => {
+  try {
+    const { id, versionNumber } = req.params;
+    const currentVersionNumber = parseInt(versionNumber);
+    
+    // We want to revert TO this target version
+    const targetVersionNumber = currentVersionNumber - 1;
+
+   
+    const targetVersion = await LongVideoVersion.findOne({
+      videoId: id,
+      versionNumber: targetVersionNumber,
+    });
+
+    if (!targetVersion) {
+      return res
+        .status(404)
+        .json({ success: false, message: `Target version ${targetVersionNumber} not found.` });
+    }
+
+    const restoredVideo = await Videos.findByIdAndUpdate(
+      id,
+      targetVersion.snapshot,
+      { new: true, runValidators: true }
+    );
+
+    if (!restoredVideo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Long video not found." });
+    }
+
+    
+    // Delete the current version that we're reverting FROM
+    const deleteResult = await LongVideoVersion.deleteOne({
+      videoId: id,
+      versionNumber: currentVersionNumber,
+    });
+
+   
+    res.status(200).json({ 
+      success: true, 
+      data: restoredVideo,
+      message: `Successfully reverted to version ${targetVersionNumber}` 
+    });
+  } catch (error) {
+    console.error("Error in revertLongVideoToVersion:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// // CORRECTED: Consistent version deletion logic
+// exports.deleteVideoVersion = async (req, res) => {
+//   try {
+//     const { id, versionNumber } = req.params;
+
+//     const deleted = await LongVideoVersion.findOneAndDelete({
+//       videoId: id,
+//       versionNumber,
+//     });
+
+//     if (!deleted) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Version not found" });
+//     }
+
+//     // Consistent renumbering logic
+//     const remainingVersions = await LongVideoVersion.find({ videoId: id }).sort({
+//       versionNumber: 1,
+//     });
+
+//     for (let i = 0; i < remainingVersions.length; i++) {
+//       remainingVersions[i].versionNumber = i + 1;
+//       await remainingVersions[i].save();
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Version deleted and renumbered successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error in deleteVersion:", error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };

@@ -254,6 +254,10 @@ const updateMagazineController = async (req, res) => {
     if (updatedData.magazineThumbnail) magazine.magazineThumbnail = updatedData.magazineThumbnail;
     if (updatedData.magazinePdf) magazine.magazinePdf = updatedData.magazinePdf;
     if (updatedData.editionNumber) magazine.editionNumber = updatedData.editionNumber;
+    
+    // Add published month and year updates
+    if (updatedData.publishedMonth !== undefined) magazine.publishedMonth = updatedData.publishedMonth;
+    if (updatedData.publishedYear !== undefined) magazine.publishedYear = updatedData.publishedYear;
 
     magazine.last_updated = new Date();
     if (req.user.role === "moderator") magazine.status = "pending";

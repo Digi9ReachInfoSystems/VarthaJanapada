@@ -3,17 +3,6 @@ const mongoose = require("mongoose");
 const User = require("../models/userModel");
 const BannerVersion = require("../models/bannerVersionModel");
 
-// const createBanner = async (req, res) => {
-//   const { title, description, bannerImage } = req.body;
-//   try {
-//     const banner = new Banner({ title, description, bannerImage });
-//     await banner.save();
-//     res.status(201).json(banner);
-//   } catch (error) {
-//     res.status(400).json({ message: error.message });
-//   }
-// };
-
 const createBanner = async (req, res) => {
   const { title, description, bannerImage } = req.body;
   const user = req.user; // from authenticateJWT
