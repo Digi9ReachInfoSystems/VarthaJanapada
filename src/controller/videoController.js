@@ -320,6 +320,8 @@ exports.getMostLikedVideo = async (req, res) => {
   }
 };
 
+
+
 // exports.updateVideo = async (req, res) => {
 //   try {
 //     const { id } = req.params;
@@ -330,64 +332,58 @@ exports.getMostLikedVideo = async (req, res) => {
 //       video_url,
 //       category,
 //       videoDuration,
+//       magazineType, // optional tag: "magazine" | "magazine2" | null
+//       newsType,     // optional tag: "statenews" | "districtnews" | "specialnews" | null
 //     } = req.body;
 
-//     // Find the existing video
+//     // 1) Find the existing video
 //     const existingVideo = await Videos.findById(id);
 //     if (!existingVideo) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Video not found",
-//       });
+//       return res.status(404).json({ success: false, message: "Video not found" });
 //     }
 
-//     // Check if the user is the creator, moderator, or admin
+//     // 2) AuthZ
 //     const isCreator = existingVideo.createdBy?.toString() === req.user.id;
 //     const isAdmin = req.user.role === "admin";
 //     const isModerator = req.user.role === "moderator";
-
 //     if (!isCreator && !isAdmin && !isModerator) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Not authorized to update this video",
-//       });
+//       return res.status(403).json({ success: false, message: "Not authorized to update this video" });
 //     }
 
-//     // STEP 1: Save a version snapshot BEFORE updating
+//     // 3) Version snapshot (BEFORE changes)
 //     const latestVersion = await VideoVersion.find({ videoId: id })
 //       .sort({ versionNumber: -1 })
 //       .limit(1);
-
-//     const nextVersionNumber = latestVersion.length > 0
-//       ? latestVersion[0].versionNumber + 1
-//       : 1;
-
-//     const snapshot = {
-//       title: existingVideo.title,
-//       description: existingVideo.description,
-//       english: existingVideo.english,
-//       kannada: existingVideo.kannada,
-//       hindi: existingVideo.hindi,
-//       thumbnail: existingVideo.thumbnail,
-//       video_url: existingVideo.video_url,
-//       category: existingVideo.category,
-//       videoDuration: existingVideo.videoDuration,
-//     };
+//     const nextVersionNumber = latestVersion.length ? latestVersion[0].versionNumber + 1 : 1;
 
 //     await VideoVersion.create({
 //       videoId: existingVideo._id,
 //       versionNumber: nextVersionNumber,
 //       updatedBy: req.user.id,
-//       snapshot,
+//       snapshot: {
+//         title: existingVideo.title,
+//         description: existingVideo.description,
+//         english: existingVideo.english,
+//         kannada: existingVideo.kannada,
+//         hindi: existingVideo.hindi,
+//         thumbnail: existingVideo.thumbnail,
+//         video_url: existingVideo.video_url,
+//         category: existingVideo.category,
+//         videoDuration: existingVideo.videoDuration,
+//         magazineType: existingVideo.magazineType,
+//         newsType: existingVideo.newsType,
+//       },
 //     });
 
-//     // STEP 2: Define update fields
+//     // 4) Build update fields
 //     const updateFields = {
 //       last_updated: new Date(),
-//       videoDuration: videoDuration || existingVideo.videoDuration,
+//       // preserve existing if not provided (avoid overwriting with undefined)
+//       videoDuration:
+//         typeof videoDuration !== "undefined" ? videoDuration : existingVideo.videoDuration,
 //     };
 
-//     // STEP 3: Translate if title or description is changed
+//     // 5) Translate if title or description changed
 //     if (title || description) {
 //       const targetLanguages = ["en", "kn", "hi"];
 //       const titleToTranslate = title || existingVideo.title;
@@ -414,189 +410,69 @@ exports.getMostLikedVideo = async (req, res) => {
 //       };
 //     }
 
-//     // STEP 4: Update other fields
+//     // 6) Other simple fields
 //     if (thumbnail) updateFields.thumbnail = thumbnail;
 //     if (video_url) updateFields.video_url = video_url;
 //     if (category) updateFields.category = category;
 
-//     // STEP 5: Set approval status based on role
-//     if (isAdmin) {
-//       updateFields.status = "approved";
-//     } else if (isModerator || isCreator) {
-//       updateFields.status = "pending";
+//     // 7) Validate & set/clear magazineType tag (matches your enum: "magazine" | "magazine2")
+//     if (typeof magazineType !== "undefined") {
+//       const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
+//       if (normalizedMagazine === "invalid") {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+//         });
+//       }
+//       if (normalizedMagazine === undefined) {
+//         // explicit clear (e.g., sending null)
+//         updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
+//       } else {
+//         updateFields.magazineType = normalizedMagazine;
+//       }
 //     }
 
-//     // STEP 6: Perform the update
-//     const updatedVideo = await Videos.findByIdAndUpdate(
-//       id,
-//       { $set: updateFields },
-//       { new: true, runValidators: true }
-//     );
+//     // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
+//     if (typeof newsType !== "undefined") {
+//       const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
+//       if (normalizedNews === "invalid") {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+//         });
+//       }
+//       if (normalizedNews === undefined) {
+//         updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
+//       } else {
+//         updateFields.newsType = normalizedNews;
+//       }
+//     }
 
-//     res.status(200).json({
+//     // 9) Role-based status
+//     if (isAdmin) updateFields.status = "approved";
+//     else if (isModerator || isCreator) updateFields.status = "pending";
+
+//     // 10) Apply update
+//     const updateOps = { $set: updateFields };
+//     if (updateFields.$unset) {
+//       updateOps.$unset = updateFields.$unset;
+//       delete updateFields.$unset;
+//     }
+
+//     const updatedVideo = await Videos.findByIdAndUpdate(id, updateOps, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     return res.status(200).json({
 //       success: true,
 //       data: updatedVideo,
-//       message: isAdmin
-//         ? "Video updated and approved"
-//         : "Video updated, awaiting admin approval",
+//       message: isAdmin ? "Video updated and approved" : "Video updated, awaiting admin approval",
 //     });
 //   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
+//     return res.status(500).json({ success: false, message: error.message });
 //   }
 // };
-
-
-exports.updateVideo = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      title,
-      description,
-      thumbnail,
-      video_url,
-      category,
-      videoDuration,
-      magazineType, // optional tag: "magazine" | "magazine2" | null
-      newsType,     // optional tag: "statenews" | "districtnews" | "specialnews" | null
-    } = req.body;
-
-    // 1) Find the existing video
-    const existingVideo = await Videos.findById(id);
-    if (!existingVideo) {
-      return res.status(404).json({ success: false, message: "Video not found" });
-    }
-
-    // 2) AuthZ
-    const isCreator = existingVideo.createdBy?.toString() === req.user.id;
-    const isAdmin = req.user.role === "admin";
-    const isModerator = req.user.role === "moderator";
-    if (!isCreator && !isAdmin && !isModerator) {
-      return res.status(403).json({ success: false, message: "Not authorized to update this video" });
-    }
-
-    // 3) Version snapshot (BEFORE changes)
-    const latestVersion = await VideoVersion.find({ videoId: id })
-      .sort({ versionNumber: -1 })
-      .limit(1);
-    const nextVersionNumber = latestVersion.length ? latestVersion[0].versionNumber + 1 : 1;
-
-    await VideoVersion.create({
-      videoId: existingVideo._id,
-      versionNumber: nextVersionNumber,
-      updatedBy: req.user.id,
-      snapshot: {
-        title: existingVideo.title,
-        description: existingVideo.description,
-        english: existingVideo.english,
-        kannada: existingVideo.kannada,
-        hindi: existingVideo.hindi,
-        thumbnail: existingVideo.thumbnail,
-        video_url: existingVideo.video_url,
-        category: existingVideo.category,
-        videoDuration: existingVideo.videoDuration,
-        magazineType: existingVideo.magazineType,
-        newsType: existingVideo.newsType,
-      },
-    });
-
-    // 4) Build update fields
-    const updateFields = {
-      last_updated: new Date(),
-      // preserve existing if not provided (avoid overwriting with undefined)
-      videoDuration:
-        typeof videoDuration !== "undefined" ? videoDuration : existingVideo.videoDuration,
-    };
-
-    // 5) Translate if title or description changed
-    if (title || description) {
-      const targetLanguages = ["en", "kn", "hi"];
-      const titleToTranslate = title || existingVideo.title;
-      const descToTranslate = description || existingVideo.description;
-
-      const [titleTranslations, descriptionTranslations] = await Promise.all([
-        Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
-        Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
-      ]);
-
-      updateFields.title = title || existingVideo.title;
-      updateFields.description = description || existingVideo.description;
-      updateFields.english = {
-        title: titleTranslations[0][0],
-        description: descriptionTranslations[0][0],
-      };
-      updateFields.kannada = {
-        title: titleTranslations[1][0],
-        description: descriptionTranslations[1][0],
-      };
-      updateFields.hindi = {
-        title: titleTranslations[2][0],
-        description: descriptionTranslations[2][0],
-      };
-    }
-
-    // 6) Other simple fields
-    if (thumbnail) updateFields.thumbnail = thumbnail;
-    if (video_url) updateFields.video_url = video_url;
-    if (category) updateFields.category = category;
-
-    // 7) Validate & set/clear magazineType tag (matches your enum: "magazine" | "magazine2")
-    if (typeof magazineType !== "undefined") {
-      const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
-      if (normalizedMagazine === "invalid") {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
-        });
-      }
-      if (normalizedMagazine === undefined) {
-        // explicit clear (e.g., sending null)
-        updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
-      } else {
-        updateFields.magazineType = normalizedMagazine;
-      }
-    }
-
-    // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
-    if (typeof newsType !== "undefined") {
-      const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
-      if (normalizedNews === "invalid") {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
-        });
-      }
-      if (normalizedNews === undefined) {
-        updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
-      } else {
-        updateFields.newsType = normalizedNews;
-      }
-    }
-
-    // 9) Role-based status
-    if (isAdmin) updateFields.status = "approved";
-    else if (isModerator || isCreator) updateFields.status = "pending";
-
-    // 10) Apply update
-    const updateOps = { $set: updateFields };
-    if (updateFields.$unset) {
-      updateOps.$unset = updateFields.$unset;
-      delete updateFields.$unset;
-    }
-
-    const updatedVideo = await Videos.findByIdAndUpdate(id, updateOps, {
-      new: true,
-      runValidators: true,
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: updatedVideo,
-      message: isAdmin ? "Video updated and approved" : "Video updated, awaiting admin approval",
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 
 exports.approveVideo = async (req, res) => {
@@ -634,6 +510,185 @@ exports.approveVideo = async (req, res) => {
 };
 
 
+// CORRECTED: Proper versioning with correct snapshot timing
+exports.updateVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    const video = await Videos.findById(id);
+    if (!video) {
+      return res.status(404).json({ success: false, message: "Video not found" });
+    }
+
+    // STEP 1: Save version snapshot of CURRENT state BEFORE updates
+    const versionCount = await VideoVersion.countDocuments({ videoId: id });
+    const currentVersionNumber = versionCount + 1;
+    
+    await VideoVersion.create({
+      videoId: video._id,
+      versionNumber: currentVersionNumber,
+      updatedBy: req.user.id,
+      snapshot: {
+        title: video.title,
+        description: video.description,
+        english: video.english,
+        kannada: video.kannada,
+        hindi: video.hindi,
+        thumbnail: video.thumbnail,
+        video_url: video.video_url,
+        category: video.category,
+        videoDuration: video.videoDuration,
+        magazineType: video.magazineType,
+        newsType: video.newsType,
+        status: video.status,
+        // Include all fields that can be updated
+      },
+    });
+
+    console.log(`Saved version ${currentVersionNumber} with title: ${video.title}`);
+
+    // STEP 2: Apply updates to the video
+    if (updatedData.title) video.title = updatedData.title;
+    if (updatedData.description) video.description = updatedData.description;
+    if (updatedData.thumbnail) video.thumbnail = updatedData.thumbnail;
+    if (updatedData.video_url) video.video_url = updatedData.video_url;
+    if (updatedData.category) video.category = updatedData.category;
+    if (updatedData.videoDuration) video.videoDuration = updatedData.videoDuration;
+    
+    // Handle magazineType and newsType with validation
+    if (updatedData.magazineType !== undefined) {
+      const normalizedMagazine = normalizeMagazineType(updatedData.magazineType);
+      if (normalizedMagazine === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+        });
+      }
+      video.magazineType = normalizedMagazine;
+    }
+
+    if (updatedData.newsType !== undefined) {
+      const normalizedNews = normalizeNewsType(updatedData.newsType);
+      if (normalizedNews === "invalid") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+        });
+      }
+      video.newsType = normalizedNews;
+    }
+
+    // Handle translations if title or description changed
+    if (updatedData.title || updatedData.description) {
+      const targetLanguages = ["en", "kn", "hi"];
+      const titleToTranslate = updatedData.title || video.title;
+      const descToTranslate = updatedData.description || video.description;
+
+      const [titleTranslations, descriptionTranslations] = await Promise.all([
+        Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
+        Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
+      ]);
+
+      video.english = {
+        title: titleTranslations[0][0],
+        description: descriptionTranslations[0][0],
+      };
+      video.kannada = {
+        title: titleTranslations[1][0],
+        description: descriptionTranslations[1][0],
+      };
+      video.hindi = {
+        title: titleTranslations[2][0],
+        description: descriptionTranslations[2][0],
+      };
+    }
+
+    video.last_updated = new Date();
+    
+    // Role-based status
+    if (req.user.role === "moderator") {
+      video.status = "pending";
+    } else if (req.user.role === "admin") {
+      video.status = "approved";
+    }
+
+    const updatedVideo = await video.save();
+    
+    console.log(`Updated to new title: ${updatedVideo.title}`);
+
+    res.status(200).json({
+      success: true,
+      data: updatedVideo,
+      message: "Video updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// CORRECTED: Proper revert logic
+exports.revertVideoToVersion = async (req, res) => {
+  try {
+    const { id, versionNumber } = req.params;
+    const currentVersionNumber = parseInt(versionNumber);
+    
+    // We want to revert TO this target version
+    const targetVersionNumber = currentVersionNumber - 1;
+
+    console.log(`Reverting from version ${currentVersionNumber} to version ${targetVersionNumber}`);
+
+    // Find the target version we want to revert TO
+    const targetVersion = await VideoVersion.findOne({
+      videoId: id,
+      versionNumber: targetVersionNumber,
+    });
+
+    if (!targetVersion) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Target version ${targetVersionNumber} not found.` 
+      });
+    }
+
+    console.log(`Found target version ${targetVersionNumber} with title: ${targetVersion.snapshot.title}`);
+
+    // Restore the video to the target version state
+    const restoredVideo = await Videos.findByIdAndUpdate(
+      id,
+      targetVersion.snapshot,
+      { new: true, runValidators: true }
+    );
+
+    if (!restoredVideo) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Video not found." 
+      });
+    }
+
+    console.log(`Restored video title to: ${restoredVideo.title}`);
+
+    // Delete the current version that we're reverting FROM
+    const deleteResult = await VideoVersion.deleteOne({
+      videoId: id,
+      versionNumber: currentVersionNumber,
+    });
+
+    console.log(`Deleted version ${currentVersionNumber}, deleted count: ${deleteResult.deletedCount}`);
+
+    res.status(200).json({ 
+      success: true, 
+      data: restoredVideo,
+      message: `Successfully reverted to version ${targetVersionNumber}` 
+    });
+  } catch (error) {
+    console.error("Error in revertVideoToVersion:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// CORRECTED: Get version history with proper data
 exports.getVideoHistory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -646,107 +701,44 @@ exports.getVideoHistory = async (req, res) => {
       return res.status(404).json({ success: false, message: "No version history found" });
     }
 
+    // Debug: Check what titles are stored in versions
+    versions.forEach(version => {
+      console.log(`Version ${version.versionNumber} title: ${version.snapshot.title}`);
+    });
+
     res.status(200).json({ success: true, data: versions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-//just swaps the previous versions
-
-// exports.revertVideoToVersion = async (req, res) => {
-//   try {
-//     const { id, versionNumber } = req.params;
-
-//     const version = await VideoVersion.findOne({ videoId: id, versionNumber });
-//     if (!version) {
-//       return res.status(404).json({ success: false, message: "Version not found" });
-//     }
-
-//     const snapshot = version.snapshot;
-//     delete snapshot._id;
-//     delete snapshot.__v;
-
-//     const reverted = await Videos.findByIdAndUpdate(id, snapshot, { new: true });
-
-//     res.status(200).json({ success: true, data: reverted });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
-
-exports.revertVideoToVersion = async (req, res) => {
-  try {
-    const { id, versionNumber } = req.params;
-const currentVersionNumber = parseInt(versionNumber);
-    const targetVersionNumber = currentVersionNumber - 1;
-
-     const targetVersion = await VideoVersion.findOne({
-          videoId: id,
-          versionNumber: targetVersionNumber,
-        });
-
-         if (!targetVersion) {
-      return res.status(404).json({ success: false, message: "Target version not found." });
-    }
-
-    await VideoVersion.deleteOne({
-          videoId: id,
-          versionNumber: currentVersionNumber,
-        });
-        res.status(200).json({ success: true, message: "Reverted and cleaned up successfully" });
-  } catch (error) {
-    console.error("Error in revertAndDeleteCurrentVersion:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-
-
-  
-
-  //   const version = await VideoVersion.findOne({ videoId: id, versionNumber });
-  //   if (!version) {
-  //     return res.status(404).json({ success: false, message: "Version not found" });
-  //   }
-
-  //   const snapshot = { ...version.snapshot };
-  //   delete snapshot._id;
-  //   delete snapshot.__v;
-
-  //   const reverted = await Videos.findByIdAndUpdate(
-  //     id,
-  //     snapshot,
-  //     { new: true, context: { skipVersioning: true } } // signal to skip versioning
-  //   );
-
-  //   res.status(200).json({ success: true, data: reverted });
-  // } catch (error) {
-  //   res.status(500).json({ success: false, message: error.message });
-  // }
-};
-
-
+// UPDATED: Consistent version deletion logic with magazine controller
 exports.deleteVersion = async (req, res) => {
   try {
     const { id, versionNumber } = req.params;
 
-    const deleted = await VideoVersion.findOneAndDelete({ videoId: id, versionNumber });
+    const deleted = await VideoVersion.findOneAndDelete({
+      videoId: id,
+      versionNumber,
+    });
+
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Version not found" });
     }
 
-    // STEP 2: Renumber all remaining versions sequentially
-    const versions = await VideoVersion.find({ videoId: id }).sort({ versionNumber: 1 });
-
-    for (let i = 0; i < versions.length; i++) {
-      versions[i].versionNumber = i + 1;
-      await versions[i].save();
+    // Consistent with magazine: renumber remaining versions
+    const remainingVersions = await VideoVersion.find({ videoId: id }).sort({ versionNumber: 1 });
+    for (let i = 0; i < remainingVersions.length; i++) {
+      remainingVersions[i].versionNumber = i + 1;
+      await remainingVersions[i].save();
     }
 
-    res.status(200).json({ success: true, message: "Version deleted and renumbered successfully" });
+    res.status(200).json({
+      success: true,
+      message: "Version deleted and renumbered successfully",
+    });
   } catch (error) {
     console.error("Error in deleteVersion:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

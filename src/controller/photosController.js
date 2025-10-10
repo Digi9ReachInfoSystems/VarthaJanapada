@@ -3,68 +3,124 @@ const mongoose = require("mongoose");
 const User = require("../models/userModel");
 
 const createPhotos = async (req, res) => {
-    const { photoImage } = req.body;
-    try {
-        const photos = new Photos({ photoImage,
-createdBy: req.user._id,
-status: req.user.role === 'admin' ? 'approved' : 'pending'
-
-        });
-        await photos.save();
-        res.status(201).json(photos);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
+  const { photoImage } = req.body;
+  const user = req.user;
+  try {
+    const photos = new Photos({
+      photoImage,
+      createdBy: user.id,
+      status: req.user.role === "admin" ? "approved" : "pending",
+    });
+    await photos.save();
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Photos created",
+        data: photos,
+      });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const approvePhotos = async (req, res) => {
+  try {
     const { id } = req.params;
-    try {
-        const photos = await Photos.findById(id);
-        if (!photos) {
-            return res.status(404).json({ message: "Photos not found" });
-        }
-        photos.status = "approved";
-        await photos.save();
-        res.status(200).json(photos);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+
+    // Validate photo ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid photo ID",
+      });
     }
+
+    // Find the photo by ID
+    const photo = await Photos.findById(id).populate("createdBy", "email name");
+
+    if (!photo) {
+      return res.status(404).json({
+        success: false,
+        message: "Photo not found",
+      });
+    }
+
+    // Check if photo is already approved
+    if (photo.status === "approved") {
+      return res.status(400).json({
+        success: false,
+        message: "Photo is already approved",
+      });
+    }
+
+    // Update photo status to approved
+    photo.status = "approved";
+    photo.last_updated = new Date();
+
+    await photo.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Photo approved successfully",
+      data: {
+        id: photo._id,
+        status: photo.status,
+        last_updated: photo.last_updated,
+        createdBy: photo.createdBy,
+      },
+    });
+  } catch (error) {
+    console.error("Error approving photo:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 };
 
 const getAllPhotos = async (req, res) => {
-    try {
-        const photos = await Photos.find({ status: "approved" });
-        res.status(200).json(photos);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
+  try {
+    const photos = await Photos.find().populate(
+      "createdBy"
+    ); // Specify fields to populate
+    res.status(200).json(photos);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const getPhotosById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).send("No photos with that id");
-        }
-        const photos = await Photos.findById(id);
-        res.status(200).json(photos);
-    } catch (error) {
-        res.status(404).json({ message: error.message });
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).send("No photos with that id");
     }
+    const photos = await Photos.findById(id);
+    res.status(200).json(photos);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 const deletePhotosById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).send("No photos with that id");
-        }
-        await Photos.findByIdAndDelete(id);
-        res.json({ message: "Photos deleted successfully" });
-    } catch (error) {
-        res.status(404).json({ message: error.message });
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).send("No photos with that id");
     }
+    await Photos.findByIdAndDelete(id);
+    res.json({ message: "Photos deleted successfully" });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
-module.exports = { createPhotos, approvePhotos, getAllPhotos, getPhotosById, deletePhotosById };
+module.exports = {
+  createPhotos,
+  approvePhotos,
+  getAllPhotos,
+  getPhotosById,
+  deletePhotosById,
+};
