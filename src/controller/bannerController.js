@@ -1,7 +1,7 @@
 const Banner = require("../models/bannerModel");
 const mongoose = require("mongoose");
 const User = require("../models/userModel");
-const BannerVersion = require("../models/bannerVersionModel");
+const BannerVersion = require("../models/BannerVersionModel");
 
 const createBanner = async (req, res) => {
   const { title, description, bannerImage } = req.body;
