@@ -1,28 +1,80 @@
+// const Photos = require("../models/photosModel");
+// const mongoose = require("mongoose");
+// const User = require("../models/userModel");
+
+// const createPhotos = async (req, res) => {
+//   const { photoImage } = req.body;
+//   const user = req.user;
+//   try {
+//     const photos = new Photos({
+//       photoImage,
+//       createdBy: user.id,
+//       status: req.user.role === "admin" ? "approved" : "pending",
+//     });
+//     await photos.save();
+//     res
+//       .status(201)
+//       .json({
+//         success: true,
+//         message: "Photos created",
+//         data: photos,
+//       });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
+
 const Photos = require("../models/photosModel");
 const mongoose = require("mongoose");
 const User = require("../models/userModel");
 
 const createPhotos = async (req, res) => {
-  const { photoImage } = req.body;
-  const user = req.user;
   try {
+    const { photoImage,title } = req.body;
+    const user = req.user;
+console.log("user",user);
+console.log("photoImage",photoImage);
+    if (!photoImage) {
+      return res.status(400).json({
+        success: false,
+        message: "Photo URL (photoImage) is required.",
+      });
+    }
+
+  if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "Title is required.",
+      });
+    }
+
     const photos = new Photos({
-      photoImage,
+      title,
+      photoImage, // ✅ store the blob URL here
       createdBy: user.id,
       status: req.user.role === "admin" ? "approved" : "pending",
+      createdTime: new Date(),
     });
+
     await photos.save();
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Photos created",
-        data: photos,
-      });
+
+    res.status(201).json({
+      success: true,
+      message: "Photo created successfully",
+      data: photos,
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error creating photo:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error creating photo",
+      error: error.message,
+    });
   }
 };
+
+module.exports = { createPhotos };
+
 
 const approvePhotos = async (req, res) => {
   try {
