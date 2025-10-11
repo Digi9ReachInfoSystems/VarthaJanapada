@@ -96,12 +96,12 @@ exports.createNews = async (req, res) => {
       "en"
     );
 
-    console.log("Hindi Title Response:", hindiTitleRes);
-    console.log("Hindi Description Response:", hindiDescriptionRes);
-    console.log("Kannada Title Response:", kannadaTitleRes);
-    console.log("Kannada Description Response:", kannadaDescriptionRes);
-    console.log("English Title Response:", englishTitleRes);
-    console.log("English Description Response:", englishDescriptionRes);
+    // console.log("Hindi Title Response:", hindiTitleRes);
+    // console.log("Hindi Description Response:", hindiDescriptionRes);
+    // console.log("Kannada Title Response:", kannadaTitleRes);
+    // console.log("Kannada Description Response:", kannadaDescriptionRes);
+    // console.log("English Title Response:", englishTitleRes);
+    // console.log("English Description Response:", englishDescriptionRes);
 
     const hindiTitle =
       hindiTitleRes && hindiTitleRes[0] ? hindiTitleRes[0] : "";
@@ -117,14 +117,14 @@ exports.createNews = async (req, res) => {
     const englishDescription =
       englishTitleRes && englishTitleRes[1] ? englishTitleRes[1] : "";
 
-    console.log("Final Translations: ", {
-      hindiTitle,
-      hindiDescription,
-      kannadaTitle,
-      kannadaDescription,
-      englishTitle,
-      englishDescription,
-    });
+    // console.log("Final Translations: ", {
+    //   hindiTitle,
+    //   hindiDescription,
+    //   kannadaTitle,
+    //   kannadaDescription,
+    //   englishTitle,
+    //   englishDescription,
+    // });
 
     const news = new News({
       ...newsData,
