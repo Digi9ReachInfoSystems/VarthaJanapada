@@ -30,8 +30,8 @@ dotenv.config();
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
-console.log("AZ conn?", !!process.env.AZURE_STORAGE_CONNECTION_STRING);
-console.log("AZ name/key?", !!process.env.AZURE_STORAGE_ACCOUNT_NAME, !!process.env.AZURE_STORAGE_ACCOUNT_KEY);
+// console.log("AZ conn?", !!process.env.AZURE_STORAGE_CONNECTION_STRING);
+// console.log("AZ name/key?", !!process.env.AZURE_STORAGE_ACCOUNT_NAME, !!process.env.AZURE_STORAGE_ACCOUNT_KEY);
 
 
 const app = express();

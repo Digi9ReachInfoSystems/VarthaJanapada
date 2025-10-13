@@ -25,6 +25,7 @@ exports.uploadToAzure = async (req, res) => {
 
     // 1) Read & validate connection string
     const conn = (process.env.AZURE_STORAGE_CONNECTION_STRING || "").trim();
+    console.log("Connectioonn",conn);
     if (!conn) {
       return res.status(500).json({ success: false, message: "AZURE_STORAGE_CONNECTION_STRING missing" });
     }
