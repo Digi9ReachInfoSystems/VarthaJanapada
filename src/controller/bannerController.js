@@ -112,6 +112,7 @@ const getAllBanners = async (req, res) => {
   }
 };
 
+
 const deleteBanner = async (req, res) => {
   try {
     const { id } = req.params;

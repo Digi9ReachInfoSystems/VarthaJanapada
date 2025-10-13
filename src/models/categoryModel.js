@@ -18,10 +18,15 @@ const categorySchema = new mongoose.Schema({
   description: {
     type: String,
   },
-   status: {
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      // required: true,
+    },
+  status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
-    default: "pending"
+    default: "pending",
   },
   createdTime: {
     type: Date,

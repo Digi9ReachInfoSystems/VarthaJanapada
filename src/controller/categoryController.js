@@ -57,7 +57,9 @@ exports.createCategory = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categoriesList = await Category.find().sort({ createdTime: -1 });
+    const categoriesList = await Category.find()
+    .populate("createdBy")
+    .sort({ createdTime: -1 });
     res.status(200).json({ success: true, data: categoriesList });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
