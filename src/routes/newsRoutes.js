@@ -37,7 +37,8 @@ router.delete(
 
 router.delete(
   "/deleteComment/:commentId/:userId",
-  authenticateJWT,allowedRoles(["admin", "moderator"]),
+  authenticateJWT,
+  allowedRoles(["admin", "moderator"]),
   newsController.deleteComment
 );
 
@@ -48,9 +49,15 @@ router.put(
   newsController.approveNews
 );
 
+router.get("/getNewsHistory/:id", newsController.getNewsHistory);
+router.post(
+  "/revertNews/:id/revert/:versionNumber",
+  newsController.revertNewsToVersion
+);
+router.delete(
+  "/deleteVersion/:id/delete/:versionNumber",
+  newsController.deleteVersion
+);
 
-
-router.get("/getNewsHistory/:id",newsController.getNewsHistory);
-router.post("/revertNews/:id/revert/:versionNumber", newsController.revertNewsToVersion);
-router.delete("/deleteVersion/:id/delete/:versionNumber", newsController.deleteVersion);
+router.get("/getNewsByNewsType/:newsType", newsController.getNewsByNewsType);
 module.exports = router;
