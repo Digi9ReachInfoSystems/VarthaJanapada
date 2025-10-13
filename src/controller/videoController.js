@@ -181,7 +181,11 @@ exports.getAllVideos = async (req, res) => {
         select: "displayName profileImage", // Select which fields from the user you want to include (important for performance)
       },
     })
-     .populate("createdBy");
+     .populate("createdBy")
+      .populate({
+      path: "category",
+      select: "name", // Select only the 'name' field from the Category model
+    });
 
     res.status(200).json({ success: true, data: videos });
   } catch (error) {
