@@ -128,11 +128,16 @@ exports.getAllVideos = async (req, res) => {
         // Populate the 'user' field within each comment
         path: "user", // Assuming your Comment model has a 'user' field referencing the User model
         select: "displayName profileImage", // Select which fields from the user you want to include (important for performance)
+         
       },
      
     })
-     .populate("createdBy");
-
+     .populate("createdBy")
+     ///populate category name 
+     .populate({
+      path: "category",
+      select: "name", // Select only the 'name' field from the Category model
+    })
     res.status(200).json({ success: true, data: videos });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
