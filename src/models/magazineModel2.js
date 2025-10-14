@@ -3,19 +3,19 @@ const mongoose = require("mongoose");
 const magazineSchema2 = new mongoose.Schema({
   title: { type: String, required: true },
   hindi: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String},
+    description: { type: String },
   },
   english: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String },
+    description: { type: String},
   },
   publishedDate: {
     type: String,
   },
   kannada: {
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: { type: String },
+    description: { type: String },
   },
   description: { type: String, required: true },
   createdTime: { type: Date, default: Date.now },
