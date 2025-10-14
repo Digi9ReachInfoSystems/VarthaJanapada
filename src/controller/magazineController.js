@@ -3,58 +3,92 @@ const { search } = require("../routes/newsRoutes");
 const { Translate } = require("@google-cloud/translate").v2;
 const MagazineVersion = require("../models/magazineVersionModel");
 
-const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
-if (!base64Key) {
-  throw new Error(
-    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
-  );
-}
-const credentials = JSON.parse(
-  Buffer.from(base64Key, "base64").toString("utf-8")
-);
+// const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
+// if (!base64Key) {
+//   throw new Error(
+//     "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
+//   );
+// }
+// const credentials = JSON.parse(
+//   Buffer.from(base64Key, "base64").toString("utf-8")
+// );
 
-const translate = new Translate({ credentials });
+// const translate = new Translate({ credentials });
+// const createMagazine = async (req, res) => {
+//   try {
+//     const { title, description } = req.body;
+
+//     // Define the target languages for translation
+//     const targetLanguages = ["en", "kn", "hi"]; // English, Kannada, Hindi
+
+//     // Translate the title and description into multiple languages
+//     const translationPromises = targetLanguages.map(async (lang) => {
+//       const titleTranslation = await translate.translate(title, lang);
+//       const descriptionTranslation = await translate.translate(
+//         description,
+//         lang
+//       );
+
+//       return {
+//         language: lang,
+//         title: titleTranslation[0], // Translation result for title
+//         description: descriptionTranslation[0], // Translation result for description
+//       };
+//     });
+
+//     // Wait for all translations to complete
+//     const translations = await Promise.all(translationPromises);
+
+//     // Prepare the translated data for the new magazine
+//     const newMagazine = new Magazine({
+//       title, // Original title
+//       description, // Original description
+//       english: {
+//         title: translations.find((t) => t.language === "en").title,
+//         description: translations.find((t) => t.language === "en").description,
+//       },
+//       kannada: {
+//         title: translations.find((t) => t.language === "kn").title,
+//         description: translations.find((t) => t.language === "kn").description,
+//       },
+//       hindi: {
+//         title: translations.find((t) => t.language === "hi").title,
+//         description: translations.find((t) => t.language === "hi").description,
+//       },
+//       publishedDate: req.body.publishedDate,
+//       publishedMonth: req.body.publishedMonth,
+//       publishedYear: req.body.publishedYear,
+//       magazineThumbnail: req.body.magazineThumbnail,
+//       magazinePdf: req.body.magazinePdf,
+//       editionNumber: req.body.editionNumber,
+//       last_updated: new Date(),
+//       createdBy: req.user.id,
+//       status:req.user.role === "admin" ? "approved" : "pending",
+//     });
+
+//     // Save the new magazine to the database
+//     const savedMagazine = await newMagazine.save();
+
+//     res.status(201).json({ success: true, data: savedMagazine });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
 const createMagazine = async (req, res) => {
   try {
     const { title, description } = req.body;
 
-    // Define the target languages for translation
-    const targetLanguages = ["en", "kn", "hi"]; // English, Kannada, Hindi
+    if (!title) {
+      return res.status(400).json({ success: false, message: "Title is required" });
+    }
+    if (!description) {
+      return res.status(400).json({ success: false, message: "Description is required" });
+    }
 
-    // Translate the title and description into multiple languages
-    const translationPromises = targetLanguages.map(async (lang) => {
-      const titleTranslation = await translate.translate(title, lang);
-      const descriptionTranslation = await translate.translate(
-        description,
-        lang
-      );
-
-      return {
-        language: lang,
-        title: titleTranslation[0], // Translation result for title
-        description: descriptionTranslation[0], // Translation result for description
-      };
-    });
-
-    // Wait for all translations to complete
-    const translations = await Promise.all(translationPromises);
-
-    // Prepare the translated data for the new magazine
     const newMagazine = new Magazine({
-      title, // Original title
-      description, // Original description
-      english: {
-        title: translations.find((t) => t.language === "en").title,
-        description: translations.find((t) => t.language === "en").description,
-      },
-      kannada: {
-        title: translations.find((t) => t.language === "kn").title,
-        description: translations.find((t) => t.language === "kn").description,
-      },
-      hindi: {
-        title: translations.find((t) => t.language === "hi").title,
-        description: translations.find((t) => t.language === "hi").description,
-      },
+      title,
+      description,
       publishedDate: req.body.publishedDate,
       publishedMonth: req.body.publishedMonth,
       publishedYear: req.body.publishedYear,
@@ -63,17 +97,18 @@ const createMagazine = async (req, res) => {
       editionNumber: req.body.editionNumber,
       last_updated: new Date(),
       createdBy: req.user.id,
-      status:req.user.role === "admin" ? "approved" : "pending",
+      status: req.user.role === "admin" ? "approved" : "pending",
     });
 
-    // Save the new magazine to the database
     const savedMagazine = await newMagazine.save();
-
     res.status(201).json({ success: true, data: savedMagazine });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
+
+
 const getMagazines = async (req, res) => {
   try {
     const { publishedYear, publishedMonth, homepage, editionNumber } =
@@ -226,6 +261,57 @@ const getTotalMagazines = async (req, res) => {
 //   }
 // };
 
+// const updateMagazineController = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const updatedData = req.body;
+
+//     const magazine = await Magazine.findById(id);
+//     if (!magazine) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Magazine not found",
+//       });
+//     }
+
+//     // STEP 1: Save version snapshot before update
+//     const versionCount = await MagazineVersion.countDocuments({ magazineId: id });
+//     await MagazineVersion.create({
+//       magazineId: magazine._id,
+//       versionNumber: versionCount + 1,
+//       updatedBy: req.user.id,
+//       snapshot: magazine.toObject(),
+//     });
+
+//     // STEP 2: Apply updates
+//     if (updatedData.title) magazine.title = updatedData.title;
+//     if (updatedData.description) magazine.description = updatedData.description;
+//     if (updatedData.magazineThumbnail) magazine.magazineThumbnail = updatedData.magazineThumbnail;
+//     if (updatedData.magazinePdf) magazine.magazinePdf = updatedData.magazinePdf;
+//     if (updatedData.editionNumber) magazine.editionNumber = updatedData.editionNumber;
+    
+//     // Add published month and year updates
+//     if (updatedData.publishedMonth !== undefined) magazine.publishedMonth = updatedData.publishedMonth;
+//     if (updatedData.publishedYear !== undefined) magazine.publishedYear = updatedData.publishedYear;
+
+//     magazine.last_updated = new Date();
+//     if (req.user.role === "moderator") magazine.status = "pending";
+
+//     const updatedMagazine = await magazine.save();
+
+//     res.status(200).json({
+//       success: true,
+//       data: updatedMagazine,
+//       message: "Magazine updated successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 const updateMagazineController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -233,13 +319,10 @@ const updateMagazineController = async (req, res) => {
 
     const magazine = await Magazine.findById(id);
     if (!magazine) {
-      return res.status(404).json({
-        success: false,
-        message: "Magazine not found",
-      });
+      return res.status(404).json({ success: false, message: "Magazine not found" });
     }
 
-    // STEP 1: Save version snapshot before update
+    // Save version snapshot before update
     const versionCount = await MagazineVersion.countDocuments({ magazineId: id });
     await MagazineVersion.create({
       magazineId: magazine._id,
@@ -248,14 +331,12 @@ const updateMagazineController = async (req, res) => {
       snapshot: magazine.toObject(),
     });
 
-    // STEP 2: Apply updates
-    if (updatedData.title) magazine.title = updatedData.title;
-    if (updatedData.description) magazine.description = updatedData.description;
-    if (updatedData.magazineThumbnail) magazine.magazineThumbnail = updatedData.magazineThumbnail;
-    if (updatedData.magazinePdf) magazine.magazinePdf = updatedData.magazinePdf;
-    if (updatedData.editionNumber) magazine.editionNumber = updatedData.editionNumber;
-    
-    // Add published month and year updates
+    // Apply updates (no translation)
+    if (updatedData.title !== undefined) magazine.title = updatedData.title;
+    if (updatedData.description !== undefined) magazine.description = updatedData.description;
+    if (updatedData.magazineThumbnail !== undefined) magazine.magazineThumbnail = updatedData.magazineThumbnail;
+    if (updatedData.magazinePdf !== undefined) magazine.magazinePdf = updatedData.magazinePdf;
+    if (updatedData.editionNumber !== undefined) magazine.editionNumber = updatedData.editionNumber;
     if (updatedData.publishedMonth !== undefined) magazine.publishedMonth = updatedData.publishedMonth;
     if (updatedData.publishedYear !== undefined) magazine.publishedYear = updatedData.publishedYear;
 
@@ -270,12 +351,10 @@ const updateMagazineController = async (req, res) => {
       message: "Magazine updated successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 
 const approveMagazine = async (req, res) => {
