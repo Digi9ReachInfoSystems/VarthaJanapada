@@ -21,6 +21,7 @@ admin.initializeApp({
 
   // storageBucket: "varthajanapada.appspot.com",
 });
+
 // admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccount),
 //   storageBucket: "varthajanapada.appspot.com",
