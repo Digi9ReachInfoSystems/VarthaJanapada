@@ -26,19 +26,19 @@ function normalizeNewsType(input) {
 
 
 
-const { Translate } = require("@google-cloud/translate").v2;
+// const { Translate } = require("@google-cloud/translate").v2;
 
-const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
-if (!base64Key) {
-  throw new Error(
-    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
-  );
-}
-const credentials = JSON.parse(
-  Buffer.from(base64Key, "base64").toString("utf-8")
-);
+// const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
+// if (!base64Key) {
+//   throw new Error(
+//     "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
+//   );
+// }
+// const credentials = JSON.parse(
+//   Buffer.from(base64Key, "base64").toString("utf-8")
+// );
 
-const translate = new Translate({ credentials });
+// const translate = new Translate({ credentials });
 
 
 // exports.uploadVideo = async (req, res) => {
@@ -138,18 +138,18 @@ exports.uploadVideo = async (req, res) => {
     }
 
     // translations (unchanged)
-    const targetLanguages = ["en", "kn", "hi"];
-    const [titleTranslations, descriptionTranslations] = await Promise.all([
-      Promise.all(targetLanguages.map((lang) => translate.translate(title, lang))),
-      Promise.all(targetLanguages.map((lang) => translate.translate(description, lang))),
-    ]);
+    // const targetLanguages = ["en", "kn", "hi"];
+    // const [titleTranslations, descriptionTranslations] = await Promise.all([
+    //   Promise.all(targetLanguages.map((lang) => translate.translate(title, lang))),
+    //   Promise.all(targetLanguages.map((lang) => translate.translate(description, lang))),
+    // ]);
 
     const newVideo = new Videos({
       title,
       description,
-      english: { title: titleTranslations[0][0], description: descriptionTranslations[0][0] },
-      kannada: { title: titleTranslations[1][0], description: descriptionTranslations[1][0] },
-      hindi: { title: titleTranslations[2][0], description: descriptionTranslations[2][0] },
+      // english: { title: titleTranslations[0][0], description: descriptionTranslations[0][0] },
+      // kannada: { title: titleTranslations[1][0], description: descriptionTranslations[1][0] },
+      // hindi: { title: titleTranslations[2][0], description: descriptionTranslations[2][0] },
       thumbnail,
       video_url,
       category,
@@ -515,6 +515,122 @@ exports.approveVideo = async (req, res) => {
 
 
 // CORRECTED: Proper versioning with correct snapshot timing
+// exports.updateVideo = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const updatedData = req.body;
+
+//     const video = await Videos.findById(id);
+//     if (!video) {
+//       return res.status(404).json({ success: false, message: "Video not found" });
+//     }
+
+//     // STEP 1: Save version snapshot of CURRENT state BEFORE updates
+//     const versionCount = await VideoVersion.countDocuments({ videoId: id });
+//     const currentVersionNumber = versionCount + 1;
+    
+//     await VideoVersion.create({
+//       videoId: video._id,
+//       versionNumber: currentVersionNumber,
+//       updatedBy: req.user.id,
+//       snapshot: {
+//         title: video.title,
+//         description: video.description,
+//         english: video.english,
+//         kannada: video.kannada,
+//         hindi: video.hindi,
+//         thumbnail: video.thumbnail,
+//         video_url: video.video_url,
+//         category: video.category,
+//         videoDuration: video.videoDuration,
+//         magazineType: video.magazineType,
+//         newsType: video.newsType,
+//         status: video.status,
+//         // Include all fields that can be updated
+//       },
+//     });
+
+//     console.log(`Saved version ${currentVersionNumber} with title: ${video.title}`);
+
+//     // STEP 2: Apply updates to the video
+//     if (updatedData.title) video.title = updatedData.title;
+//     if (updatedData.description) video.description = updatedData.description;
+//     if (updatedData.thumbnail) video.thumbnail = updatedData.thumbnail;
+//     if (updatedData.video_url) video.video_url = updatedData.video_url;
+//     if (updatedData.category) video.category = updatedData.category;
+//     if (updatedData.videoDuration) video.videoDuration = updatedData.videoDuration;
+    
+//     // Handle magazineType and newsType with validation
+//     if (updatedData.magazineType !== undefined) {
+//       const normalizedMagazine = normalizeMagazineType(updatedData.magazineType);
+//       if (normalizedMagazine === "invalid") {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+//         });
+//       }
+//       video.magazineType = normalizedMagazine;
+//     }
+
+//     if (updatedData.newsType !== undefined) {
+//       const normalizedNews = normalizeNewsType(updatedData.newsType);
+//       if (normalizedNews === "invalid") {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+//         });
+//       }
+//       video.newsType = normalizedNews;
+//     }
+
+//     // Handle translations if title or description changed
+//     if (updatedData.title || updatedData.description) {
+//       const targetLanguages = ["en", "kn", "hi"];
+//       const titleToTranslate = updatedData.title || video.title;
+//       const descToTranslate = updatedData.description || video.description;
+
+//       const [titleTranslations, descriptionTranslations] = await Promise.all([
+//         Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
+//         Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
+//       ]);
+
+//       video.english = {
+//         title: titleTranslations[0][0],
+//         description: descriptionTranslations[0][0],
+//       };
+//       video.kannada = {
+//         title: titleTranslations[1][0],
+//         description: descriptionTranslations[1][0],
+//       };
+//       video.hindi = {
+//         title: titleTranslations[2][0],
+//         description: descriptionTranslations[2][0],
+//       };
+//     }
+
+//     video.last_updated = new Date();
+    
+//     // Role-based status
+//     if (req.user.role === "moderator") {
+//       video.status = "pending";
+//     } else if (req.user.role === "admin") {
+//       video.status = "approved";
+//     }
+
+//     const updatedVideo = await video.save();
+    
+//     console.log(`Updated to new title: ${updatedVideo.title}`);
+
+//     res.status(200).json({
+//       success: true,
+//       data: updatedVideo,
+//       message: "Video updated successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 exports.updateVideo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -528,7 +644,7 @@ exports.updateVideo = async (req, res) => {
     // STEP 1: Save version snapshot of CURRENT state BEFORE updates
     const versionCount = await VideoVersion.countDocuments({ videoId: id });
     const currentVersionNumber = versionCount + 1;
-    
+
     await VideoVersion.create({
       videoId: video._id,
       versionNumber: currentVersionNumber,
@@ -536,7 +652,7 @@ exports.updateVideo = async (req, res) => {
       snapshot: {
         title: video.title,
         description: video.description,
-        english: video.english,
+        english: video.english,   // keeping snapshot as-is (no new translations created)
         kannada: video.kannada,
         hindi: video.hindi,
         thumbnail: video.thumbnail,
@@ -546,21 +662,20 @@ exports.updateVideo = async (req, res) => {
         magazineType: video.magazineType,
         newsType: video.newsType,
         status: video.status,
-        // Include all fields that can be updated
       },
     });
 
     console.log(`Saved version ${currentVersionNumber} with title: ${video.title}`);
 
-    // STEP 2: Apply updates to the video
-    if (updatedData.title) video.title = updatedData.title;
-    if (updatedData.description) video.description = updatedData.description;
-    if (updatedData.thumbnail) video.thumbnail = updatedData.thumbnail;
-    if (updatedData.video_url) video.video_url = updatedData.video_url;
-    if (updatedData.category) video.category = updatedData.category;
-    if (updatedData.videoDuration) video.videoDuration = updatedData.videoDuration;
-    
-    // Handle magazineType and newsType with validation
+    // STEP 2: Apply updates to the video (no translation)
+    if (updatedData.title !== undefined) video.title = updatedData.title;
+    if (updatedData.description !== undefined) video.description = updatedData.description;
+    if (updatedData.thumbnail !== undefined) video.thumbnail = updatedData.thumbnail;
+    if (updatedData.video_url !== undefined) video.video_url = updatedData.video_url;
+    if (updatedData.category !== undefined) video.category = updatedData.category;
+    if (updatedData.videoDuration !== undefined) video.videoDuration = updatedData.videoDuration;
+
+    // Validate & set magazineType
     if (updatedData.magazineType !== undefined) {
       const normalizedMagazine = normalizeMagazineType(updatedData.magazineType);
       if (normalizedMagazine === "invalid") {
@@ -572,6 +687,7 @@ exports.updateVideo = async (req, res) => {
       video.magazineType = normalizedMagazine;
     }
 
+    // Validate & set newsType
     if (updatedData.newsType !== undefined) {
       const normalizedNews = normalizeNewsType(updatedData.newsType);
       if (normalizedNews === "invalid") {
@@ -583,33 +699,10 @@ exports.updateVideo = async (req, res) => {
       video.newsType = normalizedNews;
     }
 
-    // Handle translations if title or description changed
-    if (updatedData.title || updatedData.description) {
-      const targetLanguages = ["en", "kn", "hi"];
-      const titleToTranslate = updatedData.title || video.title;
-      const descToTranslate = updatedData.description || video.description;
-
-      const [titleTranslations, descriptionTranslations] = await Promise.all([
-        Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
-        Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
-      ]);
-
-      video.english = {
-        title: titleTranslations[0][0],
-        description: descriptionTranslations[0][0],
-      };
-      video.kannada = {
-        title: titleTranslations[1][0],
-        description: descriptionTranslations[1][0],
-      };
-      video.hindi = {
-        title: titleTranslations[2][0],
-        description: descriptionTranslations[2][0],
-      };
-    }
+    // NO translation block here anymore
 
     video.last_updated = new Date();
-    
+
     // Role-based status
     if (req.user.role === "moderator") {
       video.status = "pending";
@@ -618,7 +711,7 @@ exports.updateVideo = async (req, res) => {
     }
 
     const updatedVideo = await video.save();
-    
+
     console.log(`Updated to new title: ${updatedVideo.title}`);
 
     res.status(200).json({
@@ -630,6 +723,7 @@ exports.updateVideo = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // CORRECTED: Proper revert logic
 exports.revertVideoToVersion = async (req, res) => {

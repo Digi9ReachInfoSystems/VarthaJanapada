@@ -1,17 +1,17 @@
 const Announcement = require("../models/AnnouncementModel");
 const { Translate } = require("@google-cloud/translate").v2;
 
-const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
-if (!base64Key) {
-  throw new Error(
-    "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
-  );
-}
-const credentials = JSON.parse(
-  Buffer.from(base64Key, "base64").toString("utf-8")
-);
+// const base64Key = process.env.GOOGLE_CLOUD_KEY_BASE64;
+// if (!base64Key) {
+//   throw new Error(
+//     "GOOGLE_CLOUD_KEY_BASE64 is not set in environment variables"
+//   );
+// }
+// const credentials = JSON.parse(
+//   Buffer.from(base64Key, "base64").toString("utf-8")
+// );
 
-const translate = new Translate({ credentials });
+// const translate = new Translate({ credentials });
 
 // Helper function to translate text
 const translateText = async (text, targetLanguage) => {
@@ -28,39 +28,26 @@ exports.createAnnouncement = async (req, res) => {
   try {
     const { title, description } = req.body;
 
-    // Translate the title and description into Hindi, English, and Kannada
-    const [titleHindi, titleEnglish, titleKannada] = await Promise.all([
-      translateText(title, "hi"), // Hindi
-      translateText(title, "en"), // English
-      translateText(title, "kn"), // Kannada
-    ]);
+    if (!title || !description) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Both title and description are required",
+      });
+    }
 
-    const [descriptionHindi, descriptionEnglish, descriptionKannada] =
-      await Promise.all([
-        translateText(description, "hi"), // Hindi
-        translateText(description, "en"), // English
-        translateText(description, "kn"), // Kannada
-      ]);
-
-    // Create the announcement with translations
+    // Create announcement WITHOUT translations
     const newAnnouncement = await Announcement.create({
-      title: {
-        en: titleEnglish,
-        hi: titleHindi,
-        kn: titleKannada,
-      },
-      description: {
-        en: descriptionEnglish,
-        hi: descriptionHindi,
-        kn: descriptionKannada,
-      },
+      title,         // plain string
+      description,   // plain string
+      // createdBy: req.user?.id, // uncomment if you track creator
+      // status: req.user?.role === "admin" ? "approved" : "pending", // optional
+      createdTime: new Date(),
+      last_updated: new Date(),
     });
 
     res.status(201).json({
       status: "success",
-      data: {
-        announcement: newAnnouncement,
-      },
+      data: { announcement: newAnnouncement },
     });
   } catch (err) {
     res.status(400).json({
@@ -69,6 +56,7 @@ exports.createAnnouncement = async (req, res) => {
     });
   }
 };
+
 
 exports.getAllAnnouncements = async (req, res) => {
   try {
@@ -117,22 +105,60 @@ exports.getAnnouncementById = async (req, res) => {
 };
 
 // 4. Update an announcement
+// exports.updateAnnouncement = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { title, description } = req.body;
+
+//     const updatedAnnouncement = await Announcement.findByIdAndUpdate(
+//       id,
+//       {
+//         title,
+//         description,
+//         last_updated: Date.now(),
+//       },
+//       {
+//         new: true, // Return the updated document
+//         runValidators: true, // Validate the update against the schema
+//       }
+//     );
+
+//     if (!updatedAnnouncement) {
+//       return res.status(404).json({
+//         status: "fail",
+//         message: "Announcement not found.",
+//       });
+//     }
+
+//     res.status(200).json({
+//       status: "success",
+//       data: {
+//         announcement: updatedAnnouncement,
+//       },
+//     });
+//   } catch (err) {
+//     res.status(400).json({
+//       status: "fail",
+//       message: err.message,
+//     });
+//   }
+// };
+
 exports.updateAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
 
+    const update = {
+      last_updated: new Date(),
+    };
+    if (title !== undefined) update.title = title;
+    if (description !== undefined) update.description = description;
+
     const updatedAnnouncement = await Announcement.findByIdAndUpdate(
       id,
-      {
-        title,
-        description,
-        last_updated: Date.now(),
-      },
-      {
-        new: true, // Return the updated document
-        runValidators: true, // Validate the update against the schema
-      }
+      update,
+      { new: true, runValidators: true }
     );
 
     if (!updatedAnnouncement) {
@@ -144,17 +170,13 @@ exports.updateAnnouncement = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      data: {
-        announcement: updatedAnnouncement,
-      },
+      data: { announcement: updatedAnnouncement },
     });
   } catch (err) {
-    res.status(400).json({
-      status: "fail",
-      message: err.message,
-    });
+    res.status(400).json({ status: "fail", message: err.message });
   }
 };
+
 
 // 5. Delete an announcement
 exports.deleteAnnouncement = async (req, res) => {

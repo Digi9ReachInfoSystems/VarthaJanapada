@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env') });
 
 // Decode Base64 Service Account JSON
 const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
