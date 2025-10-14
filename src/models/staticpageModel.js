@@ -1,11 +1,22 @@
-
 const mongoose = require("mongoose");
 
 const staicPageSchema = new mongoose.Schema({
-staticpageName: {
-  type: String,
-  required: true,
-},
+  staticpageName: {
+    type: String,
+    required: true,
+  },
+  staticpageImage: {
+    type: String,
+  },
+  hindi: {
+    type: String,
+  },
+  kannada: {
+    type: String,
+  },
+  English: {
+    type: String,
+  },
   staticpageLink: {
     type: String,
   },
