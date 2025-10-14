@@ -3,10 +3,11 @@ const mongoose = require("mongoose");
 const User = require("../models/userModel");
 
 const createStaticPage = async (req, res) => {
-  const { staticpageLink, staticpageName } = req.body;
+  const { staticpageLink, staticpageName,staticpageImage } = req.body;
   const user = req.user;
   try {
     const staticpage = new StaticPage({
+      staticpageImage,
       staticpageLink,
       staticpageName,
       createdBy: user.id,

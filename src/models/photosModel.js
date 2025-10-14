@@ -1,10 +1,18 @@
-
 const mongoose = require("mongoose");
 
 const photosSchema = new mongoose.Schema({
-title:{
-  type:String,
-},
+  title: {
+    type: String,
+  },
+  hindi: {
+    type: String,
+  },
+  kannada: {
+    type: String,
+  },
+  English: {
+    type: String,
+  },
   photoImage: {
     type: String,
   },
