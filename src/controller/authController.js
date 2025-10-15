@@ -266,10 +266,303 @@
 //   }
 // };
 
+
+
+
+// const User = require("../models/userModel");
+// const jwt = require("jsonwebtoken");
+// const bcrypt = require("bcryptjs");
+// const admin = require("../config/firebaseConfig");
+
+// // Set secure cookies
+// const setTokens = (res, accessToken, refreshToken) => {
+//   res.cookie("accessToken", accessToken, {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production",
+//     sameSite: "strict",
+//     maxAge: 15 * 60 * 1000, // 15 minutes
+//   });
+
+//   res.cookie("refreshToken", refreshToken, {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production",
+//     sameSite: "strict",
+//     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+//   });
+// };
+
+// // Signup with phone
+// exports.signup = async (req, res) => {
+//   try {
+//     const { phone_Number, displayName, profileImage, email, password } =
+//       req.body;
+
+//     const existing = await User.findOne({ phone_Number });
+//     if (existing)
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Phone number already registered" });
+
+//     const hashedPassword = password
+//       ? await bcrypt.hash(password, 12)
+//       : undefined;
+
+//     const user = await User.create({
+//       phone_Number,
+//       displayName,
+//       email,
+//       profileImage,
+//       password: hashedPassword,
+//     });
+//     await admin.auth().createUser({
+//       uid: user._id.toString(),
+//       email,
+//       phoneNumber: `+91${phone_Number}`,
+//       displayName,
+//       photoURL: profileImage,
+//       password: password || undefined,
+//     });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     res.status(201).json({ success: true, data: userData, accessToken });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Signup with email
+// exports.signupWithEmail = async (req, res) => {
+//   try {
+//     const { displayName, profileImage, email, password } = req.body;
+
+//     const existing = await User.findOne({ email });
+//     if (existing)
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Email already registered" });
+
+//     const hashedPassword = password
+//       ? await bcrypt.hash(password, 12)
+//       : undefined;
+
+//     const user = await User.create({
+//       displayName,
+//       email,
+//       profileImage,
+//       password: hashedPassword,
+//     });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     res.status(201).json({ success: true, data: userData, accessToken });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Login with phone or email
+// exports.login = async (req, res) => {
+//   try {
+//     const { phone_Number, email } = req.body;
+
+//     const query = phone_Number ? { phone_Number } : { email };
+//     const user = await User.findOneAndUpdate(
+//       query,
+//       { last_logged_in: new Date() },
+//       { new: true }
+//     );
+
+//     if (!user)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.refreshToken;
+
+//     res.status(200).json({ success: true, data: userData, accessToken });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Create user with specific role (admin only)
+// exports.createUserWithRole = async (req, res) => {
+//   try {
+//     const { phone_Number, displayName, profileImage, email, role, password } =
+//       req.body;
+
+//     const validRoles = ["admin", "moderator", "content"];
+//     if (!validRoles.includes(role)) {
+//       return res.status(400).json({ success: false, message: "Invalid role" });
+//     }
+
+//     const hashedPassword = password
+//       ? await bcrypt.hash(password, 12)
+//       : undefined;
+
+//     const user = await User.create({
+//       phone_Number,
+//       displayName,
+//       profileImage,
+//       email,
+//       password: hashedPassword,
+//       role,
+//     });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     res
+//       .status(201)
+//       .json({
+//         success: true,
+//         message: "User created",
+//         data: userData,
+//         accessToken,
+//       });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Login with role token generation
+// exports.loginWithUserRole = async (req, res) => {
+//   try {
+//     const { phone_Number, email } = req.body;
+//     const query = phone_Number ? { phone_Number } : { email };
+
+//     const user = await User.findOne(query);
+//     if (!user)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     res.status(200).json({ success: true, data: userData, token: accessToken });
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Refresh access token
+// exports.refreshToken = async (req, res) => {
+//   try {
+//     const token = req.cookies.refreshToken;
+//     if (!token)
+//       return res
+//         .status(401)
+//         .json({ success: false, message: "Missing refresh token" });
+
+//     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+//     const user = await User.findById(decoded.id).select("+refreshToken");
+
+//     if (!user || user.refreshToken !== token) {
+//       return res
+//         .status(401)
+//         .json({ success: false, message: "Invalid refresh token" });
+//     }
+
+//     const { accessToken, refreshToken: newRefresh } = user.generateAuthToken();
+//     user.refreshToken = newRefresh;
+//     await user.save();
+
+//     setTokens(res, accessToken, newRefresh);
+//     res.status(200).json({ success: true, accessToken });
+//   } catch (error) {
+//     res.status(403).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Logout
+// exports.logout = async (req, res) => {
+//   try {
+//     if (req.userId)
+//       await User.findByIdAndUpdate(req.userId, { refreshToken: null });
+
+//     res.clearCookie("accessToken");
+//     res.clearCookie("refreshToken");
+
+//     res.status(200).json({ success: true, message: "Logged out successfully" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Get user profile
+// exports.getUserProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.userId); // comes from authenticateJWT
+//     if (!user)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+
+//     res.status(200).json({ success: true, data: user });
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
+
+// // Check user existence
+// exports.checkUserByPhoneNumber = async (req, res) => {
+//   try {
+//     const { phone_Number } = req.body;
+//     if (!phone_Number)
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Phone number is required" });
+
+//     const user = await User.findOne({ phone_Number });
+//     if (!user)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User does not exist" });
+
+//     res.status(200).json({ success: true, message: "User exists", data: user });
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
+
+
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const admin = require("../config/firebaseConfig");
 
 // Set secure cookies
 const setTokens = (res, accessToken, refreshToken) => {
@@ -288,71 +581,50 @@ const setTokens = (res, accessToken, refreshToken) => {
   });
 };
 
-// Signup with phone
-exports.signup = async (req, res) => {
-  try {
-    const { phone_Number, displayName, profileImage, email, password } =
-      req.body;
-
-    const existing = await User.findOne({ phone_Number });
-    if (existing)
-      return res
-        .status(400)
-        .json({ success: false, message: "Phone number already registered" });
-
-    const hashedPassword = password
-      ? await bcrypt.hash(password, 12)
-      : undefined;
-
-    const user = await User.create({
-      phone_Number,
-      displayName,
-      email,
-      profileImage,
-      password: hashedPassword,
-    });
-    await admin.auth().createUser({
-      uid: user._id.toString(),
-      email,
-      phoneNumber: `+91${phone_Number}`,
-      displayName,
-      photoURL: profileImage,
-      password: password || undefined,
-    });
-
-    const { accessToken, refreshToken } = user.generateAuthToken();
-    user.refreshToken = refreshToken;
-    await user.save();
-
-    setTokens(res, accessToken, refreshToken);
-    const userData = user.toObject();
-    delete userData.password;
-    delete userData.refreshToken;
-
-    res.status(201).json({ success: true, data: userData, accessToken });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
-  }
+// --- Helpers ---
+const validateEmail = (email) => {
+  if (!email) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).toLowerCase());
 };
 
-// Signup with email
+const validatePassword = (pw) => {
+  // tweak as you like
+  return typeof pw === "string" && pw.length >= 6;
+};
+
+// ====================== AUTH WITHOUT FIREBASE ======================
+
+// Signup with email+password (primary flow)
 exports.signupWithEmail = async (req, res) => {
   try {
-    const { displayName, profileImage, email, password } = req.body;
+    const { displayName, profileImage, email, password, phone_Number } = req.body;
 
-    const existing = await User.findOne({ email });
-    if (existing)
-      return res
-        .status(400)
-        .json({ success: false, message: "Email already registered" });
+    if (!displayName) {
+      return res.status(400).json({ success: false, message: "displayName is required" });
+    }
+    if (!validateEmail(email)) {
+      return res.status(400).json({ success: false, message: "Valid email is required" });
+    }
+    if (!validatePassword(password)) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
 
-    const hashedPassword = password
-      ? await bcrypt.hash(password, 12)
-      : undefined;
+    // Uniqueness checks
+    if (email) {
+      const exists = await User.findOne({ email });
+      if (exists) return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+    if (phone_Number) {
+      const phoneExists = await User.findOne({ phone_Number });
+      if (phoneExists) return res.status(400).json({ success: false, message: "Phone number already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
       displayName,
       email,
+      phone_Number,
       profileImage,
       password: hashedPassword,
     });
@@ -372,22 +644,40 @@ exports.signupWithEmail = async (req, res) => {
   }
 };
 
-// Login with phone or email
-exports.login = async (req, res) => {
+// (Optional) Legacy signup with phone+password (if you want to allow)
+// If you DO NOT want phone-based signup anymore, you can delete this.
+// controllers/auth.controller.js
+exports.signup = async (req, res) => {
   try {
-    const { phone_Number, email } = req.body;
+    const { displayName, email, password, phone_Number, profileImage } = req.body;
 
-    const query = phone_Number ? { phone_Number } : { email };
-    const user = await User.findOneAndUpdate(
-      query,
-      { last_logged_in: new Date() },
-      { new: true }
-    );
+    if (!displayName) {
+      return res.status(400).json({ success: false, message: "displayName is required" });
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).toLowerCase())) {
+      return res.status(400).json({ success: false, message: "Valid email is required" });
+    }
+    if (typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
 
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+    // uniqueness checks
+    if (await User.findOne({ email })) {
+      return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+    if (phone_Number && await User.findOne({ phone_Number })) {
+      return res.status(400).json({ success: false, message: "Phone number already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await User.create({
+      displayName,
+      email,
+      phone_Number,        // optional
+      profileImage,
+      password: hashedPassword,
+    });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
@@ -395,6 +685,44 @@ exports.login = async (req, res) => {
 
     setTokens(res, accessToken, refreshToken);
     const userData = user.toObject();
+    delete userData.password;
+    delete userData.refreshToken;
+
+    return res.status(201).json({ success: true, data: userData, accessToken });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+
+// Login with email OR phone + password
+exports.login = async (req, res) => {
+  try {
+    const { phone_Number, email, password } = req.body;
+
+    if ((!email && !phone_Number) || !password) {
+      return res.status(400).json({ success: false, message: "Email/phone and password are required" });
+    }
+
+    const query = email ? { email } : { phone_Number };
+    // need password field
+    const user = await User.findOne(query).select("+password");
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found" });
+
+    const ok = await bcrypt.compare(password, user.password || "");
+    if (!ok) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    user.last_logged_in = new Date();
+    const { accessToken, refreshToken } = user.generateAuthToken();
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    setTokens(res, accessToken, refreshToken);
+    const userData = user.toObject();
+    delete userData.password;
     delete userData.refreshToken;
 
     res.status(200).json({ success: true, data: userData, accessToken });
@@ -404,19 +732,38 @@ exports.login = async (req, res) => {
 };
 
 // Create user with specific role (admin only)
+// Requires admin auth via middleware (see routes below)
 exports.createUserWithRole = async (req, res) => {
   try {
-    const { phone_Number, displayName, profileImage, email, role, password } =
-      req.body;
+    const { phone_Number, displayName, profileImage, email, role, password } = req.body;
 
-    const validRoles = ["admin", "moderator", "content"];
+    const validRoles = ["admin", "moderator", "content", "user"];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ success: false, message: "Invalid role" });
     }
 
-    const hashedPassword = password
-      ? await bcrypt.hash(password, 12)
-      : undefined;
+    if (!displayName) {
+      return res.status(400).json({ success: false, message: "displayName is required" });
+    }
+    if (email && !validateEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email" });
+    }
+    if (email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+    if (phone_Number) {
+      const phoneExists = await User.findOne({ phone_Number });
+      if (phoneExists) return res.status(400).json({ success: false, message: "Phone number already registered" });
+    }
+
+    let hashedPassword;
+    if (password) {
+      if (!validatePassword(password)) {
+        return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+      }
+      hashedPassword = await bcrypt.hash(password, 12);
+    }
 
     const user = await User.create({
       phone_Number,
@@ -436,33 +783,39 @@ exports.createUserWithRole = async (req, res) => {
     delete userData.password;
     delete userData.refreshToken;
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "User created",
-        data: userData,
-        accessToken,
-      });
+    res.status(201).json({
+      success: true,
+      message: "User created",
+      data: userData,
+      accessToken,
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 };
 
-// Login with role token generation
+// Login (returns role in payload just like normal login; keeping a separate endpoint if you use it)
 exports.loginWithUserRole = async (req, res) => {
   try {
-    const { phone_Number, email } = req.body;
-    const query = phone_Number ? { phone_Number } : { email };
+    const { phone_Number, email, password } = req.body;
 
-    const user = await User.findOne(query);
+    if ((!email && !phone_Number) || !password) {
+      return res.status(400).json({ success: false, message: "Email/phone and password are required" });
+    }
+
+    const query = email ? { email } : { phone_Number };
+    const user = await User.findOne(query).select("+password");
     if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
+
+    const ok = await bcrypt.compare(password, user.password || "");
+    if (!ok) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
+    user.last_logged_in = new Date();
     await user.save();
 
     setTokens(res, accessToken, refreshToken);
@@ -481,17 +834,13 @@ exports.refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
     if (!token)
-      return res
-        .status(401)
-        .json({ success: false, message: "Missing refresh token" });
+      return res.status(401).json({ success: false, message: "Missing refresh token" });
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.id).select("+refreshToken");
 
     if (!user || user.refreshToken !== token) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid refresh token" });
+      return res.status(401).json({ success: false, message: "Invalid refresh token" });
     }
 
     const { accessToken, refreshToken: newRefresh } = user.generateAuthToken();
@@ -523,11 +872,9 @@ exports.logout = async (req, res) => {
 // Get user profile
 exports.getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.userId); // comes from authenticateJWT
+    const user = await User.findById(req.userId); // from authenticateJWT
     if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
@@ -535,20 +882,16 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
-// Check user existence
+// Check user existence by phone
 exports.checkUserByPhoneNumber = async (req, res) => {
   try {
     const { phone_Number } = req.body;
     if (!phone_Number)
-      return res
-        .status(400)
-        .json({ success: false, message: "Phone number is required" });
+      return res.status(400).json({ success: false, message: "Phone number is required" });
 
     const user = await User.findOne({ phone_Number });
     if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User does not exist" });
+      return res.status(404).json({ success: false, message: "User does not exist" });
 
     res.status(200).json({ success: true, message: "User exists", data: user });
   } catch (error) {
