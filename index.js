@@ -45,6 +45,7 @@ const corsOptions = {
     "http://localhost:5173",
     "http://localhost:5174",
     "https://frontend-digi9.vercel.app",
+    "http://164.164.198.29:8192",
   ],
   credentials: true,
 };

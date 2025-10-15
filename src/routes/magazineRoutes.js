@@ -1,8 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 const magazineController = require("../controller/magazineController");
 const authenticateJWT = require("../middleware/authenticateRole");
 const allowedRoles = require("../middleware/allowedRole");
+
+const { uploadToAzure } = require("../config/azureService"); // reuse same controller
+
+router.post("/upload", upload.single("file"), uploadToAzure);
 
 router.get("/", magazineController.getMagazines);
 router.get("/searchmagazine", magazineController.searchMagazine);
