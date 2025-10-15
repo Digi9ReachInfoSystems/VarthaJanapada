@@ -31,39 +31,105 @@
 
 
 
-const jwt = require('jsonwebtoken');
-const User = require('../models/userModel');
+// const jwt = require('jsonwebtoken');
+// const User = require('../models/userModel');
+
+// const authenticateJWT = async (req, res, next) => {
+//   const token = req.header('Authorization')?.split(' ')[1];
+
+//   if (!token) {
+//     return res.status(401).json({ success: false, message: 'Access Denied' });
+//   }
+
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+
+//     const user = await User.findById(decoded.id).select('+refreshToken');
+//     if (!user) {
+//       return res.status(401).json({ success: false, message: 'Invalid Token' });
+//     }
+
+//     // Optional: Check if user is blocked
+//     if (user.isBlocked) {
+//       return res.status(403).json({ success: false, message: 'Account is blocked' });
+//     }
+
+//     req.user = {
+//       id: user._id,
+//       role: user.role,
+//       email: user.email
+//     };
+//     req.userId = user._id; // For consistency with your logout route
+
+//     next();
+//   } catch (err) {
+//     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+//   }
+// };
+
+// module.exports = authenticateJWT;
+
+
+
+// middlewares/authenticateJWT.js
+const jwt = require("jsonwebtoken");
+const User = require("../models/userModel");
+
+/**
+ * Extract access token from:
+ * 1) Authorization: Bearer <token>
+ * 2) Cookie: accessToken
+ * 3) Query param: access_token  (handy for WS/dev tools; optional)
+ */
+function extractAccessToken(req) {
+  const auth = req.headers.authorization || req.header("Authorization");
+  if (auth && auth.startsWith("Bearer ")) {
+    return auth.split(" ")[1];
+  }
+  if (req.cookies && req.cookies.accessToken) {
+    return req.cookies.accessToken;
+  }
+  if (req.query && req.query.access_token) {
+    return req.query.access_token;
+  }
+  return null;
+}
 
 const authenticateJWT = async (req, res, next) => {
-  const token = req.header('Authorization')?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Access Denied' });
-  }
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const token = extractAccessToken(req);
 
-    const user = await User.findById(decoded.id).select('+refreshToken');
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Access denied: missing token" });
+    }
+
+    // Verify JWT
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    } catch (e) {
+      return res.status(401).json({ success: false, message: "Invalid or expired token" });
+    }
+
+    // Load user (no need to select refreshToken here)
+    const user = await User.findById(decoded.id).lean(); // lean is fine if you don't need document methods
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid Token' });
+      return res.status(401).json({ success: false, message: "Invalid token: user not found" });
     }
 
-    // Optional: Check if user is blocked
+    // Optional: block check (ensure this field exists on your schema, e.g., { isBlocked: { type:Boolean, default:false } })
     if (user.isBlocked) {
-      return res.status(403).json({ success: false, message: 'Account is blocked' });
+      return res.status(403).json({ success: false, message: "Account is blocked" });
     }
 
-    req.user = {
-      id: user._id,
-      role: user.role,
-      email: user.email
-    };
-    req.userId = user._id; // For consistency with your logout route
+    // Attach to req
+    req.user = { id: user._id, role: user.role, email: user.email };
+    req.userId = user._id;
 
-    next();
+    return next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    console.error("authenticateJWT error:", err);
+    return res.status(500).json({ success: false, message: "Auth middleware error" });
   }
 };
 
