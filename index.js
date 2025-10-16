@@ -24,7 +24,7 @@ const analyticsRoutes = require("./src/routes/analyticsRoutes");
 const searchContent = require("./src/routes/searchRoutes");
 const photoRoutes = require("./src/routes/photosRoutes");
 const staticRoutes = require("./src/routes/staticpageRoutes");
-
+const latestNotificationRoutes = require("./src/routes/latestNotificationRoutes");
 dotenv.config();
 
 const path = require("path");
@@ -75,6 +75,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/search", searchContent);
 app.use("/api/photos", photoRoutes);
 app.use("/api/static", staticRoutes);
+app.use("/api/latestnotifications", latestNotificationRoutes);
 
 
 app.get("/", (req, res) => {
