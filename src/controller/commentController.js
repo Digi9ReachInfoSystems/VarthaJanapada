@@ -5,19 +5,44 @@ const Video = require("../models/videoModel");
 const User = require("../models/userModel");
 const LongVideo = require("../models/longVideoModel");
 
+
 exports.createComment = async (req, res) => {
   try {
-    const comment = new Comment(req.body);
-    const savedComment = await comment.save();
-    res.status(201).json({ success: true, data: savedComment });
+    const { userId, newsId, videoId, longVideoId, text } = req.body;
+
+    const newComment = new Comment({
+      user: new mongoose.Types.ObjectId(userId),
+      news: newsId ? new mongoose.Types.ObjectId(newsId) : undefined,
+      video: videoId ? new mongoose.Types.ObjectId(videoId) : undefined,
+      longVideoRef: longVideoId ? new mongoose.Types.ObjectId(longVideoId) : undefined,
+      comment: text,
+      createdTime: new Date(),
+    });
+
+    const savedComment = await newComment.save();
+
+    const populatedComment = await Comment.findById(savedComment._id)
+      .populate("user", "email displayName")
+      .populate("news", "title")
+      .populate("video", "title")
+      .populate("longVideoRef", "title");
+
+    res.status(201).json({ success: true, data: populatedComment });
   } catch (error) {
+    console.error("Error creating comment:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+
+
 exports.getAllComments = async (req, res) => {
   try {
     const comments = await Comment.find()
-      .populate("user", "displayName") // Populating user with the displayName field
+    //populate email
+      // .populate("user", "email")
+      .populate("user", "email displayName") // Populating user with the displayName field
       .populate("news", "title") // Populating news with the title field
       .populate("video", "title"); // Populating video with the title field (corrected model name)
     // .populate("longVideoRef", "title"); // Populating longVideoRef with the title field
