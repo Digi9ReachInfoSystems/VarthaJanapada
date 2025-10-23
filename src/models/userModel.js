@@ -247,7 +247,7 @@ userSchema.methods.generateAuthToken = function() {
       role: this.role 
     },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '15m' } // align with cookie maxAge (15 mins)
+    { expiresIn: '1d' } 
   );
   
   const refreshToken = jwt.sign(
