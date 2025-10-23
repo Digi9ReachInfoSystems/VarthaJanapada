@@ -505,26 +505,31 @@ const getMagazinesByYear = async (req, res) => {
       .sort({ createdTime: -1 })
       .populate("createdBy", "displayName email role");
 
+    // ✅ Return 200 with empty data array if none found
     if (!magazines.length) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: `No magazines found for year ${year}`,
+        count: 0,
         data: [],
       });
     }
 
+    // ✅ Success response with data
     res.status(200).json({
       success: true,
       count: magazines.length,
       data: magazines,
     });
   } catch (error) {
+    console.error("Error fetching magazines by year:", error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Internal server error",
     });
   }
 };
+
 
 module.exports = {
   getMagazinesByYear,
