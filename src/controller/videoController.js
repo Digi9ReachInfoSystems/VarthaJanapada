@@ -326,158 +326,6 @@ exports.getMostLikedVideo = async (req, res) => {
 
 
 
-// exports.updateVideo = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const {
-//       title,
-//       description,
-//       thumbnail,
-//       video_url,
-//       category,
-//       videoDuration,
-//       magazineType, // optional tag: "magazine" | "magazine2" | null
-//       newsType,     // optional tag: "statenews" | "districtnews" | "specialnews" | null
-//     } = req.body;
-
-//     // 1) Find the existing video
-//     const existingVideo = await Videos.findById(id);
-//     if (!existingVideo) {
-//       return res.status(404).json({ success: false, message: "Video not found" });
-//     }
-
-//     // 2) AuthZ
-//     const isCreator = existingVideo.createdBy?.toString() === req.user.id;
-//     const isAdmin = req.user.role === "admin";
-//     const isModerator = req.user.role === "moderator";
-//     if (!isCreator && !isAdmin && !isModerator) {
-//       return res.status(403).json({ success: false, message: "Not authorized to update this video" });
-//     }
-
-//     // 3) Version snapshot (BEFORE changes)
-//     const latestVersion = await VideoVersion.find({ videoId: id })
-//       .sort({ versionNumber: -1 })
-//       .limit(1);
-//     const nextVersionNumber = latestVersion.length ? latestVersion[0].versionNumber + 1 : 1;
-
-//     await VideoVersion.create({
-//       videoId: existingVideo._id,
-//       versionNumber: nextVersionNumber,
-//       updatedBy: req.user.id,
-//       snapshot: {
-//         title: existingVideo.title,
-//         description: existingVideo.description,
-//         english: existingVideo.english,
-//         kannada: existingVideo.kannada,
-//         hindi: existingVideo.hindi,
-//         thumbnail: existingVideo.thumbnail,
-//         video_url: existingVideo.video_url,
-//         category: existingVideo.category,
-//         videoDuration: existingVideo.videoDuration,
-//         magazineType: existingVideo.magazineType,
-//         newsType: existingVideo.newsType,
-//       },
-//     });
-
-//     // 4) Build update fields
-//     const updateFields = {
-//       last_updated: new Date(),
-//       // preserve existing if not provided (avoid overwriting with undefined)
-//       videoDuration:
-//         typeof videoDuration !== "undefined" ? videoDuration : existingVideo.videoDuration,
-//     };
-
-//     // 5) Translate if title or description changed
-//     if (title || description) {
-//       const targetLanguages = ["en", "kn", "hi"];
-//       const titleToTranslate = title || existingVideo.title;
-//       const descToTranslate = description || existingVideo.description;
-
-//       const [titleTranslations, descriptionTranslations] = await Promise.all([
-//         Promise.all(targetLanguages.map((lang) => translate.translate(titleToTranslate, lang))),
-//         Promise.all(targetLanguages.map((lang) => translate.translate(descToTranslate, lang))),
-//       ]);
-
-//       updateFields.title = title || existingVideo.title;
-//       updateFields.description = description || existingVideo.description;
-//       updateFields.english = {
-//         title: titleTranslations[0][0],
-//         description: descriptionTranslations[0][0],
-//       };
-//       updateFields.kannada = {
-//         title: titleTranslations[1][0],
-//         description: descriptionTranslations[1][0],
-//       };
-//       updateFields.hindi = {
-//         title: titleTranslations[2][0],
-//         description: descriptionTranslations[2][0],
-//       };
-//     }
-
-//     // 6) Other simple fields
-//     if (thumbnail) updateFields.thumbnail = thumbnail;
-//     if (video_url) updateFields.video_url = video_url;
-//     if (category) updateFields.category = category;
-
-//     // 7) Validate & set/clear magazineType tag (matches your enum: "magazine" | "magazine2")
-//     if (typeof magazineType !== "undefined") {
-//       const normalizedMagazine = normalizeMagazineType(magazineType); // you already have this helper
-//       if (normalizedMagazine === "invalid") {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
-//         });
-//       }
-//       if (normalizedMagazine === undefined) {
-//         // explicit clear (e.g., sending null)
-//         updateFields.$unset = { ...(updateFields.$unset || {}), magazineType: "" };
-//       } else {
-//         updateFields.magazineType = normalizedMagazine;
-//       }
-//     }
-
-//     // 8) Validate & set/clear newsType tag (matches your enum: "statenews" | "districtnews" | "specialnews")
-//     if (typeof newsType !== "undefined") {
-//       const normalizedNews = normalizeNewsType(newsType); // add the helper if not present
-//       if (normalizedNews === "invalid") {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
-//         });
-//       }
-//       if (normalizedNews === undefined) {
-//         updateFields.$unset = { ...(updateFields.$unset || {}), newsType: "" };
-//       } else {
-//         updateFields.newsType = normalizedNews;
-//       }
-//     }
-
-//     // 9) Role-based status
-//     if (isAdmin) updateFields.status = "approved";
-//     else if (isModerator || isCreator) updateFields.status = "pending";
-
-//     // 10) Apply update
-//     const updateOps = { $set: updateFields };
-//     if (updateFields.$unset) {
-//       updateOps.$unset = updateFields.$unset;
-//       delete updateFields.$unset;
-//     }
-
-//     const updatedVideo = await Videos.findByIdAndUpdate(id, updateOps, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       data: updatedVideo,
-//       message: isAdmin ? "Video updated and approved" : "Video updated, awaiting admin approval",
-//     });
-//   } catch (error) {
-//     return res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
 
 exports.approveVideo = async (req, res) => {
   try {
@@ -838,5 +686,93 @@ exports.deleteVersion = async (req, res) => {
   } catch (error) {
     console.error("Error in deleteVersion:", error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+
+const User = require("../models/userModel");
+
+exports.addShortVideoToPlaylist = async (req, res) => {
+  try {
+    const { userId, videoId } = req.body;
+
+    if (!userId || !videoId) {
+      return res.status(400).json({ success: false, message: "userId and videoId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const video = await Videos.findById(videoId);
+    if (!video) return res.status(404).json({ success: false, message: "Video not found" });
+
+    // Prevent duplicates
+    const alreadyExists = user.playlist?.shortvideoplaylist?.some(
+      (item) => item.videoId.toString() === videoId
+    );
+    if (alreadyExists)
+      return res.status(400).json({ success: false, message: "Video already in playlist" });
+
+    user.playlist.shortvideoplaylist.push({ videoId });
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Short video added to playlist successfully",
+      playlist: user.playlist.shortvideoplaylist,
+    });
+  } catch (error) {
+    console.error("Error adding short video to playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// ➖ Remove a short video from playlist
+exports.removeShortVideoFromPlaylist = async (req, res) => {
+  try {
+    const { userId, videoId } = req.body;
+
+    if (!userId || !videoId) {
+      return res.status(400).json({ success: false, message: "userId and videoId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    user.playlist.shortvideoplaylist = user.playlist.shortvideoplaylist.filter(
+      (item) => item.videoId.toString() !== videoId
+    );
+
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "Short video removed from playlist",
+      playlist: user.playlist.shortvideoplaylist,
+    });
+  } catch (error) {
+    console.error("Error removing short video from playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// 📄 Get user’s short video playlist
+exports.getShortVideoPlaylist = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).populate(
+      "playlist.shortvideoplaylist.videoId"
+    );
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    res.status(200).json({
+      success: true,
+      playlist: user.playlist.shortvideoplaylist,
+    });
+  } catch (error) {
+    console.error("Error fetching short video playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
   }
 };

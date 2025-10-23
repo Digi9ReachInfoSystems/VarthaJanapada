@@ -17,5 +17,9 @@ router.get("/getHistory/:id",magazineController.getMagazineHistory);
 router.post("/reverMagazine2/:id/revert/:versionNumber",magazineController.revertMagazineToVersion);
 
 router.delete("/deleteMagazineVersion2/:id/delete/:versionNumber", magazineController.deleteMagazineVersion2); 
-router.get("/by-year/:year", magazineController.getMagazinesByYear);   
+router.get("/by-year/:year", magazineController.getMagazinesByYear);  
+
+router.post("/addmagazine2/playlist", authenticateJWT, allowedRoles(['user']), magazineController.addMarchOfKarnatakaToPlaylist);
+router.delete("/removemagazine2/playlist", authenticateJWT, allowedRoles(['user']), magazineController.removeMarchOfKarnatakaFromPlaylist);
+router.get("/getuser/magazineplaylist2/:userId", authenticateJWT, allowedRoles(['user']), magazineController.getMarchOfKarnatakaPlaylist);
 module.exports = router;

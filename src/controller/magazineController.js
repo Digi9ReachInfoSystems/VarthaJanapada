@@ -498,6 +498,116 @@ const getMagazinesByYear = async (req, res) => {
 
 
 
+const User = require("../models/userModel");
+
+// ➕ Add magazine to playlist
+const addMagazineToPlaylist = async (req, res) => {
+  try {
+    const { userId, magazineId } = req.body;
+    console.log("Adding magazine to playlist:", { userId, magazineId });
+
+    if (!userId || !magazineId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and magazineId are required" });
+    }
+
+  const user = await User.findById(userId);
+if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+// ensure nested playlist array exists
+if (!user.playlist) user.playlist = {};
+if (!user.playlist.varthaJanapadaplaylist)
+  user.playlist.varthaJanapadaplaylist = [];
+
+const magazine = await Magazine.findById(magazineId);
+if (!magazine)
+  return res.status(404).json({ success: false, message: "Magazine not found" });
+
+// Prevent duplicates
+const alreadyExists = user.playlist.varthaJanapadaplaylist.some(
+  (item) => item.magazineId && item.magazineId.toString() === magazineId
+);
+if (alreadyExists)
+  return res
+    .status(400)
+    .json({ success: false, message: "Magazine already in playlist" });
+
+user.playlist.varthaJanapadaplaylist.push({ magazineId });
+await user.save();
+
+
+    res.status(200).json({
+      success: true,
+      message: "Magazine added to playlist successfully",
+      playlist: user.playlist.varthaJanapadaplaylist,
+    });
+  } catch (error) {
+    console.error("Error adding magazine to playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// ➖ Remove magazine from playlist
+const removeMagazineFromPlaylist = async (req, res) => {
+  try {
+    const { userId, magazineId } = req.body;
+
+    if (!userId || !magazineId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and magazineId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Ensure playlist and subarray exist
+    if (!user.playlist) user.playlist = {};
+    if (!user.playlist.varthaJanapadaplaylist)
+      user.playlist.varthaJanapadaplaylist = [];
+
+    // Defensive filter
+    user.playlist.varthaJanapadaplaylist = user.playlist.varthaJanapadaplaylist.filter(
+      (item) => item.magazineId && item.magazineId.toString() !== magazineId
+    );
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Magazine removed from playlist",
+      playlist: user.playlist.varthaJanapadaplaylist,
+    });
+  } catch (error) {
+    console.error("Error removing magazine from playlist:", error);
+    return res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+
+// 📄 Get user's magazine playlist
+const getMagazinePlaylist = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).populate(
+      "playlist.varthaJanapadaplaylist.magazineId"
+    );
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    res.status(200).json({
+      success: true,
+      playlist: user.playlist.varthaJanapadaplaylist,
+    });
+  } catch (error) {
+    console.error("Error fetching magazine playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
 
 
 module.exports = {
@@ -512,5 +622,8 @@ module.exports = {
   getMagazineHistory,
   revertMagazineToVersion,
   deleteMagazineVersion,
-  getMagazinesByYear
+  getMagazinesByYear,
+  addMagazineToPlaylist,
+  removeMagazineFromPlaylist,
+  getMagazinePlaylist
 };
