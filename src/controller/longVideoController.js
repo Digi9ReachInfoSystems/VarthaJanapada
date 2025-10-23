@@ -997,3 +997,98 @@ exports.revertLongVideoToVersion = async (req, res) => {
 //     res.status(500).json({ success: false, message: error.message });
 //   }
 // };
+
+
+
+const User = require("../models/userModel");
+
+// ➕ Add a long video to playlist
+exports.addLongVideoToPlaylist = async (req, res) => {
+  try {
+    const { userId, videoId } = req.body;
+
+    if (!userId || !videoId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and videoId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const longVideo = await Videos.findById(videoId);
+    if (!longVideo)
+      return res.status(404).json({ success: false, message: "Long video not found" });
+
+    // Prevent duplicates
+    const alreadyExists = user.playlist?.longvideoplaylist?.some(
+      (item) => item.videoId.toString() === videoId
+    );
+    if (alreadyExists)
+      return res
+        .status(400)
+        .json({ success: false, message: "Video already in playlist" });
+
+    user.playlist.longvideoplaylist.push({ videoId });
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Long video added to playlist successfully",
+      playlist: user.playlist.longvideoplaylist,
+    });
+  } catch (error) {
+    console.error("Error adding long video to playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// ➖ Remove a long video from playlist
+exports.removeLongVideoFromPlaylist = async (req, res) => {
+  try {
+    const { userId, videoId } = req.body;
+
+    if (!userId || !videoId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and videoId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    user.playlist.longvideoplaylist = user.playlist.longvideoplaylist.filter(
+      (item) => item.videoId.toString() !== videoId
+    );
+
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "Long video removed from playlist",
+      playlist: user.playlist.longvideoplaylist,
+    });
+  } catch (error) {
+    console.error("Error removing long video from playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// 📄 Get user's long video playlist
+exports.getLongVideoPlaylist = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).populate(
+      "playlist.longvideoplaylist.videoId"
+    );
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    res.status(200).json({
+      success: true,
+      playlist: user.playlist.longvideoplaylist,
+    });
+  } catch (error) {
+    console.error("Error fetching long video playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};

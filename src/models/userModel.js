@@ -236,6 +236,40 @@ const userSchema = new mongoose.Schema({
     of: Number,
     default: {},
   },
+
+  playlist: {
+  newsplaylist: [
+    {
+      newsId: { type: mongoose.Schema.Types.ObjectId, ref: "News" },
+      addedAt: { type: Date, default: Date.now },
+    },
+  ],
+   shortvideoplaylist: [
+      {
+        videoId: { type: mongoose.Schema.Types.ObjectId, ref: "Video" },
+        addedAt: { type: Date, default: Date.now },
+      },
+    ],
+    longvideoplaylist: [
+      {
+        videoId: { type: mongoose.Schema.Types.ObjectId, ref: "LongVideo" },
+        addedAt: { type: Date, default: Date.now },
+      },
+    ],
+    varthaJanapadaplaylist: [
+      {
+        magazineId: { type: mongoose.Schema.Types.ObjectId, ref: "Magazine" },
+        addedAt: { type: Date, default: Date.now },
+      },
+    ],
+ marchofkarnatakaplaylist: [
+      {
+        magazineId: { type: mongoose.Schema.Types.ObjectId, ref: "Magazine2" },
+        addedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+},
 });
 
 // Method to generate JWT tokens

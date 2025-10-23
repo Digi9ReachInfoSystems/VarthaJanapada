@@ -530,8 +530,114 @@ const getMagazinesByYear = async (req, res) => {
   }
 };
 
+const User = require("../models/userModel");
+const addMarchOfKarnatakaToPlaylist = async (req, res) => {
+  try {
+    const { userId, magazineId } = req.body;
+    console.log("Adding to March of Karnataka playlist:", { userId, magazineId });
+
+    if (!userId || !magazineId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and magazineId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const magazine = await Magazine.findById(magazineId);
+    if (!magazine)
+      return res.status(404).json({ success: false, message: "Magazine not found" });
+
+    // Ensure array exists
+    if (!user.playlist) user.playlist = {};
+    if (!user.playlist.marchofkarnatakaplaylist)
+      user.playlist.marchofkarnatakaplaylist = [];
+
+    // Prevent duplicates
+    const alreadyExists = user.playlist.marchofkarnatakaplaylist.some(
+      (item) => item.magazineId && item.magazineId.toString() === magazineId
+    );
+    if (alreadyExists)
+      return res
+        .status(400)
+        .json({ success: false, message: "Magazine already in playlist" });
+
+    // Add
+    user.playlist.marchofkarnatakaplaylist.push({ magazineId });
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Magazine added to March of Karnataka playlist successfully",
+      playlist: user.playlist.marchofkarnatakaplaylist,
+    });
+  } catch (error) {
+    console.error("Error adding to March of Karnataka playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// ➖ Remove magazine from playlist
+const removeMarchOfKarnatakaFromPlaylist = async (req, res) => {
+  try {
+    const { userId, magazineId } = req.body;
+
+    if (!userId || !magazineId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and magazineId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    // Defensive check
+    if (!user.playlist?.marchofkarnatakaplaylist)
+      user.playlist.marchofkarnatakaplaylist = [];
+
+    user.playlist.marchofkarnatakaplaylist = user.playlist.marchofkarnatakaplaylist.filter(
+      (item) => item.magazineId && item.magazineId.toString() !== magazineId
+    );
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Magazine removed from March of Karnataka playlist",
+      playlist: user.playlist.marchofkarnatakaplaylist,
+    });
+  } catch (error) {
+    console.error("Error removing from March of Karnataka playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// 📄 Get user's March of Karnataka playlist
+const getMarchOfKarnatakaPlaylist = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).populate(
+      "playlist.marchofkarnatakaplaylist.magazineId"
+    );
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    res.status(200).json({
+      success: true,
+      playlist: user.playlist.marchofkarnatakaplaylist,
+    });
+  } catch (error) {
+    console.error("Error fetching March of Karnataka playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
 
 module.exports = {
+  addMarchOfKarnatakaToPlaylist,
+  removeMarchOfKarnatakaFromPlaylist,
+  getMarchOfKarnatakaPlaylist,
   getMagazinesByYear,
   createMagazine,
   getMagazines,

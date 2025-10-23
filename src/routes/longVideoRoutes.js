@@ -17,6 +17,8 @@ router.get("/longVideoHistory/:id", videoController.getLongVideoHistory);
 router.post("/revertLongVideo/:id/revert/:versionNumber", videoController.revertLongVideoToVersion);
 router.delete("/deleteLongVideoVersion/:id/delete/:versionNumber", videoController.deleteVideoVersioon);
 
-
+router.post("/addlongvideo/playlist", authenticateJWT, allowedRoles(['user']), videoController.addLongVideoToPlaylist);
+router.delete("/removelongvideo/playlist", authenticateJWT, allowedRoles(['user']), videoController.removeLongVideoFromPlaylist);
+router.get("/getuser/longvideoplaylist/:userId", authenticateJWT, allowedRoles(['user']), videoController.getLongVideoPlaylist);
 
 module.exports = router;

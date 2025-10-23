@@ -159,6 +159,7 @@ const Tags = require("../models/tagsModel");
 const Comment = require("../models/commentsModel");
 const mongoose = require("mongoose");
 const NewsVersion = require("../models/newsVersionModel");
+const User = require("../models/userModel");
 
 // --- helpers (unchanged) ---
 function normalizeMagazineType(input) {
@@ -746,4 +747,66 @@ exports.getNewsByNewsType = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+
+
+
+
+exports.addNewsToPlaylist = async (req, res) => {
+  try {
+    const { userId, newsId } = req.body;
+
+    // Validate inputs
+    if (!userId || !newsId) {
+      return res.status(400).json({ message: "userId and newsId are required" });
+    }
+
+    // Check if user and news exist
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const news = await News.findById(newsId);
+    if (!news) return res.status(404).json({ message: "News not found" });
+
+    // Prevent duplicates
+    const alreadyExists = user.playlist?.newsplaylist?.some(
+      (item) => item.newsId.toString() === newsId
+    );
+    if (alreadyExists)
+      return res.status(400).json({ message: "News already in playlist" });
+
+    // Add to playlist
+    user.playlist.newsplaylist.push({ newsId });
+    await user.save();
+
+    res.status(200).json({
+      message: "News added to playlist successfully",
+      playlist: user.playlist.newsplaylist,
+    });
+  } catch (error) {
+    console.error("Error adding news to playlist:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+
+exports.removeNewsFromPlaylist = async (req, res) => {
+  const { userId, newsId } = req.body;
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  user.playlist.newsplaylist = user.playlist.newsplaylist.filter(
+    (item) => item.newsId.toString() !== newsId
+  );
+  await user.save();
+  res.status(200).json({ message: "Removed from playlist", playlist: user.playlist.newsplaylist });
+};
+
+
+exports.getNewsPlaylist = async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findById(userId).populate("playlist.newsplaylist.newsId");
+  if (!user) return res.status(404).json({ message: "User not found" });
+  res.status(200).json({ playlist: user.playlist.newsplaylist });
 };

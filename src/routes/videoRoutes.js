@@ -24,4 +24,8 @@ router.post("/approveVideo/:id",authenticateJWT, allowedRoles(['admin']), videoC
 router.get("/getVideoHistory/:id", videoController.getVideoHistory);
 router.post("/revertVideo/:id/revert/:versionNumber", videoController.revertVideoToVersion);
 router.delete("/deleteVideoVersion/:id/delete/:versionNumber", videoController.deleteVersion);
+
+router.post("/addshorts/playlist", authenticateJWT, allowedRoles(['user']), videoController.addShortVideoToPlaylist);
+router.delete("/removeshorts/playlist", authenticateJWT, allowedRoles(['user']), videoController.removeShortVideoFromPlaylist);
+router.get("/getuser/shortsvideo/:userId", authenticateJWT, allowedRoles(['user']), videoController.getShortVideoPlaylist);
 module.exports = router;

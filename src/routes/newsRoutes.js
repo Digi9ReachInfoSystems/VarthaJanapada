@@ -59,5 +59,22 @@ router.delete(
   newsController.deleteVersion
 );
 
+router.post("/add/addnews",
+  authenticateJWT,
+  allowedRoles(["user"]), newsController.addNewsToPlaylist);
+
+router.delete(
+  "/delete/removenews",
+  authenticateJWT,
+  allowedRoles(["user"]),
+  newsController.removeNewsFromPlaylist
+);
+
+router.get("/getuser/newsplaylist/:userId", 
+  authenticateJWT,
+  allowedRoles(["user"]),
+  newsController.getNewsPlaylist
+);
+
 router.get("/getNewsByNewsType/:newsType", newsController.getNewsByNewsType);
 module.exports = router;
