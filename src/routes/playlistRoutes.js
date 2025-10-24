@@ -22,10 +22,10 @@ router.delete(
 
 // Get playlist by type
 router.get(
-  "/get/:userId/:type",
+  "/get/:userId",
   authenticateJWT,
   allowedRoles(["user"]),
-  globalPlaylistController.getPlaylist
+  globalPlaylistController.getAllPlaylists
 );
 
 module.exports = router;

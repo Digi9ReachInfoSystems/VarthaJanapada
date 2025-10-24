@@ -79,25 +79,47 @@ exports.removeFromPlaylist = async (req, res) => {
 };
 
 // 📄 Get playlist by type
-exports.getPlaylist = async (req, res) => {
+exports.getAllPlaylists = async (req, res) => {
   try {
-    const { userId, type } = req.params;
+    const { userId } = req.params;
 
-    const map = modelMap[type.toLowerCase()];
-    if (!map)
-      return res.status(400).json({ success: false, message: "Invalid type specified" });
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required in request parameters",
+      });
+    }
 
-    const populatePath = `${map.path}.${map.field}`;
-    const user = await User.findById(userId).populate(populatePath);
+    const user = await User.findById(userId)
+      .populate("playlist.newsplaylist.newsId")
+      .populate("playlist.shortvideoplaylist.videoId")
+      .populate("playlist.longvideoplaylist.videoId")
+      .populate("playlist.varthaJanapadaplaylist.magazineId")
+      .populate("playlist.marchofkarnatakaplaylist.magazineId");
 
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      playlist: user.playlist[type.toLowerCase() + "playlist"],
+      message: "Fetched all playlists successfully",
+      playlists: {
+        newsplaylist: user.playlist.newsplaylist || [],
+        shortvideoplaylist: user.playlist.shortvideoplaylist || [],
+        longvideoplaylist: user.playlist.longvideoplaylist || [],
+        varthaJanapadaplaylist: user.playlist.varthaJanapadaplaylist || [],
+        marchofkarnatakaplaylist: user.playlist.marchofkarnatakaplaylist || [],
+      },
     });
   } catch (error) {
-    console.error("Error fetching playlist:", error);
-    res.status(500).json({ success: false, message: "Server error", error });
+    console.error("Error fetching playlists:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
   }
 };
