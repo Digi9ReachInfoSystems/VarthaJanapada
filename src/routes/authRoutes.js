@@ -41,7 +41,7 @@ router.post(
 
 // View your own profile
 router.get("/getUserProfile", authenticateJWT, authController.getUserProfile);
-router.get("/getuserbyfirebaseuid/:firebaseUid", authenticateJWT, authController.getUserByFirebaseUserId);
+router.get("/getuserbyfirebaseuid/:firebaseUid",  authController.getUserByFirebaseUserId);
 
 router.post("/checkuser-exists", authController.checkUserAlreadyExists);
 router.post("/refresh-token", authController.refreshToken);
