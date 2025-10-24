@@ -194,10 +194,10 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "moderator", "user", "content"],
     default: "user",
   },  
-  // displayName: {
-  //   type: String,
-  //   required: true,
-  // }, 
+  displayName: {
+    type: String,
+    required: false,
+  }, 
   createdTime: {
     type: Date,
     default: Date.now,

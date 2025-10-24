@@ -28,6 +28,7 @@ router.post("/logout", userController.logout);
 router.get("/recommendations/:userId", userController.recommendCategory);
 
 router.put("/update-profile/:firebaseUid", userController.updateUserProfile);
+router.put("/update-admin-profile/:userId",authenticateJWT, allowedRoles(['admin']), userController.updateAdminProfile);
 router.put("/update-preferences/:userId", userController.updateUserPreferences);
 router.delete("/deleteuser/:userId",authenticateJWT, allowedRoles(['admin']), userController.deleteUser);
 module.exports = router;
