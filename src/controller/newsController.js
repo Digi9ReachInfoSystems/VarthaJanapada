@@ -792,15 +792,36 @@ exports.addNewsToPlaylist = async (req, res) => {
 
 
 exports.removeNewsFromPlaylist = async (req, res) => {
-  const { userId, newsId } = req.body;
-  const user = await User.findById(userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
+  try {
+    const { userId, newsId } = req.body;
 
-  user.playlist.newsplaylist = user.playlist.newsplaylist.filter(
-    (item) => item.newsId.toString() !== newsId
-  );
-  await user.save();
-  res.status(200).json({ message: "Removed from playlist", playlist: user.playlist.newsplaylist });
+    if (!userId || !newsId) {
+      return res.status(400).json({ success: false, message: "userId and newsId are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    // Defensive checks to avoid crashes
+    if (!user.playlist) user.playlist = {};
+    if (!user.playlist.newsplaylist) user.playlist.newsplaylist = [];
+
+    // Filter out the newsId
+    user.playlist.newsplaylist = user.playlist.newsplaylist.filter(
+      (item) => item.newsId && item.newsId.toString() !== newsId
+    );
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "News removed from playlist successfully",
+      playlist: user.playlist.newsplaylist,
+    });
+  } catch (error) {
+    console.error("Error removing news from playlist:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
+  }
 };
 
 

@@ -63,7 +63,7 @@ router.post("/add/addnews",
   authenticateJWT,
   allowedRoles(["user"]), newsController.addNewsToPlaylist);
 
-router.delete(
+router.put(
   "/delete/removenews",
   authenticateJWT,
   allowedRoles(["user"]),

@@ -583,35 +583,48 @@ const removeMarchOfKarnatakaFromPlaylist = async (req, res) => {
   try {
     const { userId, magazineId } = req.body;
 
+    // Validate required fields
     if (!userId || !magazineId) {
       return res
         .status(400)
         .json({ success: false, message: "userId and magazineId are required" });
     }
 
+    // Find user
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found" });
 
-    // Defensive check
-    if (!user.playlist?.marchofkarnatakaplaylist)
+    // Ensure playlist structure exists
+    if (!user.playlist) user.playlist = {};
+    if (!user.playlist.marchofkarnatakaplaylist)
       user.playlist.marchofkarnatakaplaylist = [];
 
-    user.playlist.marchofkarnatakaplaylist = user.playlist.marchofkarnatakaplaylist.filter(
-      (item) => item.magazineId && item.magazineId.toString() !== magazineId
-    );
+    // Filter out the magazineId safely
+    user.playlist.marchofkarnatakaplaylist =
+      user.playlist.marchofkarnatakaplaylist.filter(
+        (item) => item.magazineId && item.magazineId.toString() !== magazineId
+      );
 
+    // Save user
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: "Magazine removed from March of Karnataka playlist",
+      message: "Magazine removed from March of Karnataka playlist successfully",
       playlist: user.playlist.marchofkarnatakaplaylist,
     });
   } catch (error) {
     console.error("Error removing from March of Karnataka playlist:", error);
-    res.status(500).json({ success: false, message: "Server error", error });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
   }
 };
+
+
 
 // 📄 Get user's March of Karnataka playlist
 const getMarchOfKarnatakaPlaylist = async (req, res) => {

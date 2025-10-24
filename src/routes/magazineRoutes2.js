@@ -20,6 +20,6 @@ router.delete("/deleteMagazineVersion2/:id/delete/:versionNumber", magazineContr
 router.get("/by-year/:year", magazineController.getMagazinesByYear);  
 
 router.post("/addmagazine2/playlist", authenticateJWT, allowedRoles(['user']), magazineController.addMarchOfKarnatakaToPlaylist);
-router.delete("/removemagazine2/playlist", authenticateJWT, allowedRoles(['user']), magazineController.removeMarchOfKarnatakaFromPlaylist);
+router.put("/removemagazine2/playlist", authenticateJWT, allowedRoles(['user']), magazineController.removeMarchOfKarnatakaFromPlaylist);
 router.get("/getuser/magazineplaylist2/:userId", authenticateJWT, allowedRoles(['user']), magazineController.getMarchOfKarnatakaPlaylist);
 module.exports = router;
