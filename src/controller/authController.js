@@ -266,9 +266,6 @@
 //   }
 // };
 
-
-
-
 // const User = require("../models/userModel");
 // const jwt = require("jsonwebtoken");
 // const bcrypt = require("bcryptjs");
@@ -559,7 +556,6 @@
 //   }
 // };
 
-
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -648,14 +644,18 @@ exports.signupWithEmail = async (req, res) => {
   try {
     const { idToken } = req.body; // Firebase ID token from frontend
     if (!idToken)
-      return res.status(400).json({ success: false, message: "Firebase ID token is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Firebase ID token is required" });
 
     const decoded = await admin.auth().verifyIdToken(idToken);
     const { email, phone_number, name, picture } = decoded;
 
     let user = await User.findOne({ email });
     if (user)
-      return res.status(400).json({ success: false, message: "Email already registered" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
 
     user = await User.create({
       email,
@@ -726,17 +726,9 @@ exports.signupWithEmail = async (req, res) => {
 //   }
 // };
 
-
 const extractUserInfoFromFirebase = (decodedToken) => {
-  const {
-    uid,
-    email,
-    phone_number,
-    name,
-    picture,
-    email_verified,
-    firebase
-  } = decodedToken;
+  const { uid, email, phone_number, name, picture, email_verified, firebase } =
+    decodedToken;
 
   return {
     firebaseUid: uid,
@@ -745,30 +737,29 @@ const extractUserInfoFromFirebase = (decodedToken) => {
     displayName: name || "User",
     profileImage: picture || null,
     emailVerified: email_verified || false,
-    signInProvider: firebase?.sign_in_provider || null
+    signInProvider: firebase?.sign_in_provider || null,
   };
 };
 
 // Unified Signup with Firebase
 exports.signup = async (req, res) => {
   try {
-    const { firebaseUid, email, phone_Number, displayName, profileImage } = req.body;
-    
-
+    const { firebaseUid, email, phone_Number, displayName, profileImage } =
+      req.body;
 
     // Check if user already exists by firebaseUid, email, or phone
     const existingUser = await User.findOne({
       $or: [
         { firebaseUid: firebaseUid },
         // { email: userInfo.email },
-        { phone_Number: phone_Number }
-      ].filter(condition => Object.values(condition)[0] !== null) // Remove null conditions
+        { phone_Number: phone_Number },
+      ].filter((condition) => Object.values(condition)[0] !== null), // Remove null conditions
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User already exists with this email or phone number" 
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this email or phone number",
       });
     }
 
@@ -793,57 +784,55 @@ exports.signup = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.refreshToken;
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       message: "User created successfully",
-      data: userResponse, 
-      accessToken 
+      data: userResponse,
+      accessToken,
     });
-
   } catch (error) {
     console.error("Signup error:", error);
-    
+
     // Handle specific Firebase errors
-    if (error.code === 'auth/id-token-expired') {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Firebase token expired" 
-      });
-    }
-    
-    if (error.code === 'auth/id-token-revoked') {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Firebase token revoked" 
-      });
-    }
-    
-    if (error.code === 'auth/argument-error') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid Firebase token" 
+    if (error.code === "auth/id-token-expired") {
+      return res.status(401).json({
+        success: false,
+        message: "Firebase token expired",
       });
     }
 
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    if (error.code === "auth/id-token-revoked") {
+      return res.status(401).json({
+        success: false,
+        message: "Firebase token revoked",
+      });
+    }
+
+    if (error.code === "auth/argument-error") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Firebase token",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
     });
   }
 };
 
-
 exports.getUserByFirebaseUserId = async (req, res) => {
   try {
     const { firebaseUid } = req.params;
-    const user = await User
-      .findOne({ firebaseUid })
-      
+    const user = await User.findOne({ firebaseUid });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
-   
+
     // Generate JWT tokens
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
@@ -856,33 +845,65 @@ exports.getUserByFirebaseUserId = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.refreshToken;
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       message: "User fetched successfully",
-      data: userResponse, 
-      accessToken 
+      data: userResponse,
+      accessToken,
     });
-  }catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};  
-
-exports.checkUserAlreadyExists = async (req, res) => {
-  try {
-    const {phone_Number } = req.body;
-    const user = await User.findOne({ phone_Number });
-
-    if (user) {
-      return res.status(200).json({ success: true, message: "User already exists" });
-    } else {
-      return res.status(200).json({ success: false, message: "User does not exist" });
-    }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
+exports.checkUserAlreadyExists = async (req, res) => {
+  try {
+    const { phone_Number, email } = req.body;
+    if (email && phone_Number) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Provide either email or phone number, not both",
+        });
+    }
+    if (!email && !phone_Number) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Provide email or phone number" });
+    }
+    if (email) {
+      if (phone_Number) {
+        const user = await User.findOne({ email });
 
+        if (user) {
+          return res
+            .status(200)
+            .json({ success: true, message: "User already exists" });
+        } else {
+          return res
+            .status(200)
+            .json({ success: false, message: "User does not exist" });
+        }
+      }
+    }
+    if (phone_Number) {
+      const user = await User.findOne({ phone_Number });
+
+      if (user) {
+        return res
+          .status(200)
+          .json({ success: true, message: "User already exists" });
+      } else {
+        return res
+          .status(200)
+          .json({ success: false, message: "User does not exist" });
+      }
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 // Login with email OR phone + password
 // exports.login = async (req, res) => {
@@ -924,7 +945,9 @@ exports.login = async (req, res) => {
   try {
     const { idToken } = req.body;
     if (!idToken)
-      return res.status(400).json({ success: false, message: "Firebase ID token required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Firebase ID token required" });
 
     const decoded = await admin.auth().verifyIdToken(idToken);
     const { email, phone_number } = decoded;
@@ -934,7 +957,9 @@ exports.login = async (req, res) => {
     });
 
     if (!user)
-      return res.status(404).json({ success: false, message: "User not found. Please sign up." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found. Please sign up." });
 
     user.last_logged_in = new Date();
 
@@ -954,7 +979,8 @@ exports.login = async (req, res) => {
 // Requires admin auth via middleware (see routes below)
 exports.createUserWithRole = async (req, res) => {
   try {
-    const { phone_Number, displayName, profileImage, email, role, password } = req.body;
+    const { phone_Number, displayName, profileImage, email, role, password } =
+      req.body;
 
     const validRoles = ["admin", "moderator", "content", "user"];
     if (!validRoles.includes(role)) {
@@ -962,24 +988,37 @@ exports.createUserWithRole = async (req, res) => {
     }
 
     if (!displayName) {
-      return res.status(400).json({ success: false, message: "displayName is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "displayName is required" });
     }
     if (email && !validateEmail(email)) {
       return res.status(400).json({ success: false, message: "Invalid email" });
     }
     if (email) {
       const emailExists = await User.findOne({ email });
-      if (emailExists) return res.status(400).json({ success: false, message: "Email already registered" });
+      if (emailExists)
+        return res
+          .status(400)
+          .json({ success: false, message: "Email already registered" });
     }
     if (phone_Number) {
       const phoneExists = await User.findOne({ phone_Number });
-      if (phoneExists) return res.status(400).json({ success: false, message: "Phone number already registered" });
+      if (phoneExists)
+        return res
+          .status(400)
+          .json({ success: false, message: "Phone number already registered" });
     }
 
     let hashedPassword;
     if (password) {
       if (!validatePassword(password)) {
-        return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Password must be at least 6 characters",
+          });
       }
       hashedPassword = await bcrypt.hash(password, 12);
     }
@@ -1019,17 +1058,26 @@ exports.loginWithUserRole = async (req, res) => {
     const { phone_Number, email, password } = req.body;
 
     if ((!email && !phone_Number) || !password) {
-      return res.status(400).json({ success: false, message: "Email/phone and password are required" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Email/phone and password are required",
+        });
     }
 
     const query = email ? { email } : { phone_Number };
     const user = await User.findOne(query).select("+password");
     if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     const ok = await bcrypt.compare(password, user.password || "");
     if (!ok) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     const { accessToken, refreshToken } = user.generateAuthToken();
@@ -1053,13 +1101,17 @@ exports.refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
     if (!token)
-      return res.status(401).json({ success: false, message: "Missing refresh token" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Missing refresh token" });
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.id).select("+refreshToken");
 
     if (!user || user.refreshToken !== token) {
-      return res.status(401).json({ success: false, message: "Invalid refresh token" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid refresh token" });
     }
 
     const { accessToken, refreshToken: newRefresh } = user.generateAuthToken();
@@ -1093,7 +1145,9 @@ exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.userId); // from authenticateJWT
     if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
@@ -1106,11 +1160,15 @@ exports.checkUserByPhoneNumber = async (req, res) => {
   try {
     const { phone_Number } = req.body;
     if (!phone_Number)
-      return res.status(400).json({ success: false, message: "Phone number is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone number is required" });
 
     const user = await User.findOne({ phone_Number });
     if (!user)
-      return res.status(404).json({ success: false, message: "User does not exist" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User does not exist" });
 
     res.status(200).json({ success: true, message: "User exists", data: user });
   } catch (error) {

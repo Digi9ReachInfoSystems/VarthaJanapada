@@ -493,3 +493,48 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+exports.updateAdminProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { displayName, email, profileImage } = req.body;
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid admin ID" });
+    }
+    // Validate that at least one field is provided
+    if (!displayName && !email && !profileImage) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No update fields provided" });
+    }
+    // Check if email is unique
+    if (email) {
+      const existingUser = await User
+
+        .findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        return res
+
+          .status(400)
+          .json({ success: false, message: "Email is already in use" });
+      }
+    }
+    const updatedAdmin = await User.findByIdAndUpdate(
+      userId,
+      { $set: { displayName, email, profileImage } },
+      { new: true, runValidators: true }
+    );
+    if (!updatedAdmin) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Admin not found" });
+    }
+    res.status(200).json({ success: true, data: updatedAdmin });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
