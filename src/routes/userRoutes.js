@@ -27,7 +27,7 @@ router.post("/logout", userController.logout);
 // Route to recommend news category based on the user's interactions
 router.get("/recommendations/:userId", userController.recommendCategory);
 
-router.put("/update-profile/:userId", userController.updateUserProfile);
+router.put("/update-profile/:firebaseUid", userController.updateUserProfile);
 router.put("/update-preferences/:userId", userController.updateUserPreferences);
 router.delete("/deleteuser/:userId",authenticateJWT, allowedRoles(['admin']), userController.deleteUser);
 module.exports = router;

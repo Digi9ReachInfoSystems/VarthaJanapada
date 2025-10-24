@@ -187,16 +187,11 @@ exports.recommendCategory = async (req, res) => {
 
 exports.updateUserProfile = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { firebaseUid } = req.params;
     const { displayName, email, profileImage } = req.body;
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid user ID" });
-    }
 
+   
     // Validate that at least one field is provided
     if (!displayName && !email && !profileImage) {
       return res
@@ -213,10 +208,15 @@ exports.updateUserProfile = async (req, res) => {
           .json({ success: false, message: "Email is already in use" });
       }
     }
-
+const user = await User.findOne({ firebaseUid });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
     // Update the user profile
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
+      user._id,
       { $set: { displayName, email, profileImage } },
       { new: true, runValidators: true }
     );

@@ -563,8 +563,8 @@
 const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const admin = require("../config/firebaseConfig");
 
-// Set secure cookies
 const setTokens = (res, accessToken, refreshToken) => {
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
@@ -595,38 +595,73 @@ const validatePassword = (pw) => {
 // ====================== AUTH WITHOUT FIREBASE ======================
 
 // Signup with email+password (primary flow)
+// exports.signupWithEmail = async (req, res) => {
+//   try {
+//     const { displayName, profileImage, email, password, phone_Number } = req.body;
+
+//     if (!displayName) {
+//       return res.status(400).json({ success: false, message: "displayName is required" });
+//     }
+//     if (!validateEmail(email)) {
+//       return res.status(400).json({ success: false, message: "Valid email is required" });
+//     }
+//     if (!validatePassword(password)) {
+//       return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+//     }
+
+//     // Uniqueness checks
+//     if (email) {
+//       const exists = await User.findOne({ email });
+//       if (exists) return res.status(400).json({ success: false, message: "Email already registered" });
+//     }
+//     if (phone_Number) {
+//       const phoneExists = await User.findOne({ phone_Number });
+//       if (phoneExists) return res.status(400).json({ success: false, message: "Phone number already registered" });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     const user = await User.create({
+//       displayName,
+//       email,
+//       phone_Number,
+//       profileImage,
+//       password: hashedPassword,
+//     });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     res.status(201).json({ success: true, data: userData, accessToken });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
 exports.signupWithEmail = async (req, res) => {
   try {
-    const { displayName, profileImage, email, password, phone_Number } = req.body;
+    const { idToken } = req.body; // Firebase ID token from frontend
+    if (!idToken)
+      return res.status(400).json({ success: false, message: "Firebase ID token is required" });
 
-    if (!displayName) {
-      return res.status(400).json({ success: false, message: "displayName is required" });
-    }
-    if (!validateEmail(email)) {
-      return res.status(400).json({ success: false, message: "Valid email is required" });
-    }
-    if (!validatePassword(password)) {
-      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
-    }
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { email, phone_number, name, picture } = decoded;
 
-    // Uniqueness checks
-    if (email) {
-      const exists = await User.findOne({ email });
-      if (exists) return res.status(400).json({ success: false, message: "Email already registered" });
-    }
-    if (phone_Number) {
-      const phoneExists = await User.findOne({ phone_Number });
-      if (phoneExists) return res.status(400).json({ success: false, message: "Phone number already registered" });
-    }
+    let user = await User.findOne({ email });
+    if (user)
+      return res.status(400).json({ success: false, message: "Email already registered" });
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await User.create({
-      displayName,
+    user = await User.create({
       email,
-      phone_Number,
-      profileImage,
-      password: hashedPassword,
+      phone_Number: phone_number,
+      profileImage: picture,
+      displayName: name || "User",
     });
 
     const { accessToken, refreshToken } = user.generateAuthToken();
@@ -634,100 +669,267 @@ exports.signupWithEmail = async (req, res) => {
     await user.save();
 
     setTokens(res, accessToken, refreshToken);
-    const userData = user.toObject();
-    delete userData.password;
-    delete userData.refreshToken;
-
-    res.status(201).json({ success: true, data: userData, accessToken });
+    res.status(201).json({ success: true, data: user, accessToken });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    console.error("signupWithEmail error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
 // (Optional) Legacy signup with phone+password (if you want to allow)
 // If you DO NOT want phone-based signup anymore, you can delete this.
 // controllers/auth.controller.js
+// exports.signup = async (req, res) => {
+//   try {
+//     const { displayName, email, password, phone_Number, profileImage } = req.body;
+
+//     if (!displayName) {
+//       return res.status(400).json({ success: false, message: "displayName is required" });
+//     }
+//     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).toLowerCase())) {
+//       return res.status(400).json({ success: false, message: "Valid email is required" });
+//     }
+//     if (typeof password !== "string" || password.length < 6) {
+//       return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+//     }
+
+//     // uniqueness checks
+//     if (await User.findOne({ email })) {
+//       return res.status(400).json({ success: false, message: "Email already registered" });
+//     }
+//     if (phone_Number && await User.findOne({ phone_Number })) {
+//       return res.status(400).json({ success: false, message: "Phone number already registered" });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     const user = await User.create({
+//       displayName,
+//       email,
+//       phone_Number,        // optional
+//       profileImage,
+//       password: hashedPassword,
+//     });
+
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     return res.status(201).json({ success: true, data: userData, accessToken });
+//   } catch (error) {
+//     return res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
+
+const extractUserInfoFromFirebase = (decodedToken) => {
+  const {
+    uid,
+    email,
+    phone_number,
+    name,
+    picture,
+    email_verified,
+    firebase
+  } = decodedToken;
+
+  return {
+    firebaseUid: uid,
+    email: email || null,
+    phone_Number: phone_number || null,
+    displayName: name || "User",
+    profileImage: picture || null,
+    emailVerified: email_verified || false,
+    signInProvider: firebase?.sign_in_provider || null
+  };
+};
+
+// Unified Signup with Firebase
 exports.signup = async (req, res) => {
   try {
-    const { displayName, email, password, phone_Number, profileImage } = req.body;
+    const { firebaseUid, email, phone_Number, displayName, profileImage } = req.body;
+    
 
-    if (!displayName) {
-      return res.status(400).json({ success: false, message: "displayName is required" });
-    }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).toLowerCase())) {
-      return res.status(400).json({ success: false, message: "Valid email is required" });
-    }
-    if (typeof password !== "string" || password.length < 6) {
-      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
-    }
 
-    // uniqueness checks
-    if (await User.findOne({ email })) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
-    }
-    if (phone_Number && await User.findOne({ phone_Number })) {
-      return res.status(400).json({ success: false, message: "Phone number already registered" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await User.create({
-      displayName,
-      email,
-      phone_Number,        // optional
-      profileImage,
-      password: hashedPassword,
+    // Check if user already exists by firebaseUid, email, or phone
+    const existingUser = await User.findOne({
+      $or: [
+        { firebaseUid: firebaseUid },
+        // { email: userInfo.email },
+        { phone_Number: phone_Number }
+      ].filter(condition => Object.values(condition)[0] !== null) // Remove null conditions
     });
 
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "User already exists with this email or phone number" 
+      });
+    }
+
+    // Create new user
+    const user = await User.create({
+      firebaseUid,
+      email,
+      phone_Number,
+      displayName,
+      profileImage,
+    });
+
+    // Generate JWT tokens
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
     await user.save();
 
+    // Set cookies
     setTokens(res, accessToken, refreshToken);
-    const userData = user.toObject();
-    delete userData.password;
-    delete userData.refreshToken;
 
-    return res.status(201).json({ success: true, data: userData, accessToken });
+    // Return user data (excluding sensitive fields)
+    const userResponse = user.toObject();
+    delete userResponse.refreshToken;
+
+    res.status(201).json({ 
+      success: true, 
+      message: "User created successfully",
+      data: userResponse, 
+      accessToken 
+    });
+
   } catch (error) {
-    return res.status(400).json({ success: false, error: error.message });
+    console.error("Signup error:", error);
+    
+    // Handle specific Firebase errors
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Firebase token expired" 
+      });
+    }
+    
+    if (error.code === 'auth/id-token-revoked') {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Firebase token revoked" 
+      });
+    }
+    
+    if (error.code === 'auth/argument-error') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid Firebase token" 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
 
+exports.getUserByFirebaseUserId = async (req, res) => {
+  try {
+    const { firebaseUid } = req.params;
+    const user = await User
+      .findOne({ firebaseUid })
+      
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+   
+    res.status(200).json({ success: true, data: user });
+  }catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};  
+
+exports.checkUserAlreadyExists = async (req, res) => {
+  try {
+    const {phone_Number } = req.body;
+    const user = await User.findOne({ phone_Number });
+
+    if (user) {
+      return res.status(200).json({ success: true, message: "User already exists" });
+    } else {
+      return res.status(200).json({ success: false, message: "User does not exist" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
 // Login with email OR phone + password
+// exports.login = async (req, res) => {
+//   try {
+//     const { phone_Number, email, password } = req.body;
+
+//     if ((!email && !phone_Number) || !password) {
+//       return res.status(400).json({ success: false, message: "Email/phone and password are required" });
+//     }
+
+//     const query = email ? { email } : { phone_Number };
+//     // need password field
+//     const user = await User.findOne(query).select("+password");
+//     if (!user)
+//       return res.status(404).json({ success: false, message: "User not found" });
+
+//     const ok = await bcrypt.compare(password, user.password || "");
+//     if (!ok) {
+//       return res.status(401).json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     user.last_logged_in = new Date();
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     setTokens(res, accessToken, refreshToken);
+//     const userData = user.toObject();
+//     delete userData.password;
+//     delete userData.refreshToken;
+
+//     res.status(200).json({ success: true, data: userData, accessToken });
+//   } catch (error) {
+//     res.status(400).json({ success: false, error: error.message });
+//   }
+// };
+
 exports.login = async (req, res) => {
   try {
-    const { phone_Number, email, password } = req.body;
+    const { idToken } = req.body;
+    if (!idToken)
+      return res.status(400).json({ success: false, message: "Firebase ID token required" });
 
-    if ((!email && !phone_Number) || !password) {
-      return res.status(400).json({ success: false, message: "Email/phone and password are required" });
-    }
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { email, phone_number } = decoded;
 
-    const query = email ? { email } : { phone_Number };
-    // need password field
-    const user = await User.findOne(query).select("+password");
+    const user = await User.findOne({
+      $or: [{ email }, { phone_Number: phone_number }],
+    });
+
     if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
-
-    const ok = await bcrypt.compare(password, user.password || "");
-    if (!ok) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
+      return res.status(404).json({ success: false, message: "User not found. Please sign up." });
 
     user.last_logged_in = new Date();
+
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
     await user.save();
 
     setTokens(res, accessToken, refreshToken);
-    const userData = user.toObject();
-    delete userData.password;
-    delete userData.refreshToken;
-
-    res.status(200).json({ success: true, data: userData, accessToken });
+    res.status(200).json({ success: true, data: user, accessToken });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    console.error("login error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
