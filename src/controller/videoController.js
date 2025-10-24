@@ -734,28 +734,44 @@ exports.removeShortVideoFromPlaylist = async (req, res) => {
   try {
     const { userId, videoId } = req.body;
 
+    // Validate input
     if (!userId || !videoId) {
-      return res.status(400).json({ success: false, message: "userId and videoId are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "userId and videoId are required" });
     }
 
+    // Find user
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found" });
 
+    // Ensure playlist structure exists
+    if (!user.playlist) user.playlist = {};
+    if (!user.playlist.shortvideoplaylist)
+      user.playlist.shortvideoplaylist = [];
+
+    // Filter out the video
     user.playlist.shortvideoplaylist = user.playlist.shortvideoplaylist.filter(
-      (item) => item.videoId.toString() !== videoId
+      (item) => item.videoId && item.videoId.toString() !== videoId
     );
 
+    // Save changes
     await user.save();
+
     res.status(200).json({
       success: true,
-      message: "Short video removed from playlist",
+      message: "Short video removed from playlist successfully",
       playlist: user.playlist.shortvideoplaylist,
     });
   } catch (error) {
     console.error("Error removing short video from playlist:", error);
-    res.status(500).json({ success: false, message: "Server error", error });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error });
   }
 };
+
 
 // 📄 Get user’s short video playlist
 exports.getShortVideoPlaylist = async (req, res) => {

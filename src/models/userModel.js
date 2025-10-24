@@ -281,7 +281,7 @@ userSchema.methods.generateAuthToken = function() {
       role: this.role 
     },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '1d' } 
+    { expiresIn: '7d' } 
   );
   
   const refreshToken = jwt.sign(

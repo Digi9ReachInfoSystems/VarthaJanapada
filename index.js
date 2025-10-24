@@ -25,6 +25,8 @@ const searchContent = require("./src/routes/searchRoutes");
 const photoRoutes = require("./src/routes/photosRoutes");
 const staticRoutes = require("./src/routes/staticpageRoutes");
 const latestNotificationRoutes = require("./src/routes/latestNotificationRoutes");
+
+const playlistRoutes = require("./src/routes/playlistRoutes");
 dotenv.config();
 
 const path = require("path");
@@ -77,7 +79,7 @@ app.use("/api/photos", photoRoutes);
 app.use("/api/static", staticRoutes);
 app.use("/api/latestnotifications", latestNotificationRoutes);
 
-
+app.use("/api/playlist", playlistRoutes);
 app.get("/", (req, res) => {
   res.send("Server running!");
 })

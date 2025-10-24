@@ -553,39 +553,46 @@ const removeMagazineFromPlaylist = async (req, res) => {
   try {
     const { userId, magazineId } = req.body;
 
+    // Validate input
     if (!userId || !magazineId) {
       return res
         .status(400)
         .json({ success: false, message: "userId and magazineId are required" });
     }
 
+    // Find the user
     const user = await User.findById(userId);
-    if (!user) {
+    if (!user)
       return res.status(404).json({ success: false, message: "User not found" });
-    }
 
-    // Ensure playlist and subarray exist
+    // Ensure playlist structure exists
     if (!user.playlist) user.playlist = {};
     if (!user.playlist.varthaJanapadaplaylist)
       user.playlist.varthaJanapadaplaylist = [];
 
-    // Defensive filter
+    // Remove the magazine safely
     user.playlist.varthaJanapadaplaylist = user.playlist.varthaJanapadaplaylist.filter(
       (item) => item.magazineId && item.magazineId.toString() !== magazineId
     );
 
+    // Save updated user
     await user.save();
 
     return res.status(200).json({
       success: true,
-      message: "Magazine removed from playlist",
+      message: "Magazine removed from playlist successfully",
       playlist: user.playlist.varthaJanapadaplaylist,
     });
   } catch (error) {
     console.error("Error removing magazine from playlist:", error);
-    return res.status(500).json({ success: false, message: "Server error", error });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message || error,
+    });
   }
 };
+
 
 
 // 📄 Get user's magazine playlist

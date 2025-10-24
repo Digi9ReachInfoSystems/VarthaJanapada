@@ -24,6 +24,6 @@ router.delete("/deleteMagazine1Version/:id/delete/:versionNumber", magazineContr
 router.get("/by-year/:year", magazineController.getMagazinesByYear);
 
 router.post("/addmagazine/playlist", authenticateJWT, allowedRoles(['user']), magazineController.addMagazineToPlaylist);
-router.delete("/removemagazine/playlist", authenticateJWT, allowedRoles(['user']), magazineController.removeMagazineFromPlaylist);
+router.put("/removemagazine/playlist", authenticateJWT, allowedRoles(['user']), magazineController.removeMagazineFromPlaylist);
 router.get("/getuser/magazineplaylist/:userId", authenticateJWT, allowedRoles(['user']), magazineController.getMagazinePlaylist);
 module.exports = router;

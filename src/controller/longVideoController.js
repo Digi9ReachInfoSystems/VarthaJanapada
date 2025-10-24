@@ -1048,28 +1048,41 @@ exports.removeLongVideoFromPlaylist = async (req, res) => {
   try {
     const { userId, videoId } = req.body;
 
+    // Validate input
     if (!userId || !videoId) {
       return res
         .status(400)
         .json({ success: false, message: "userId and videoId are required" });
     }
 
+    // Find the user
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res.status(404).json({ success: false, message: "User not found" });
 
+    // Defensive checks
+    if (!user.playlist) user.playlist = {};
+    if (!user.playlist.longvideoplaylist)
+      user.playlist.longvideoplaylist = [];
+
+    // Remove the video
     user.playlist.longvideoplaylist = user.playlist.longvideoplaylist.filter(
-      (item) => item.videoId.toString() !== videoId
+      (item) => item.videoId && item.videoId.toString() !== videoId
     );
 
+    // Save updated playlist
     await user.save();
+
     res.status(200).json({
       success: true,
-      message: "Long video removed from playlist",
+      message: "Long video removed from playlist successfully",
       playlist: user.playlist.longvideoplaylist,
     });
   } catch (error) {
     console.error("Error removing long video from playlist:", error);
-    res.status(500).json({ success: false, message: "Server error", error });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error });
   }
 };
 
