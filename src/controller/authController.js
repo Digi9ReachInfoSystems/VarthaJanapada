@@ -844,7 +844,24 @@ exports.getUserByFirebaseUserId = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
    
-    res.status(200).json({ success: true, data: user });
+    // Generate JWT tokens
+    const { accessToken, refreshToken } = user.generateAuthToken();
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    // Set cookies
+    setTokens(res, accessToken, refreshToken);
+
+    // Return user data (excluding sensitive fields)
+    const userResponse = user.toObject();
+    delete userResponse.refreshToken;
+
+    res.status(201).json({ 
+      success: true, 
+      message: "User fetched successfully",
+      data: userResponse, 
+      accessToken 
+    });
   }catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
