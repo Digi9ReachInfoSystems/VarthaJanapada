@@ -856,54 +856,54 @@ exports.getUserByFirebaseUserId = async (req, res) => {
   }
 };
 
-exports.checkUserAlreadyExists = async (req, res) => {
-  try {
-    const { phone_Number, email } = req.body;
-    if (email && phone_Number) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Provide either email or phone number, not both",
-        });
-    }
-    if (!email && !phone_Number) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Provide email or phone number" });
-    }
-    if (email) {
-      if (phone_Number) {
-        const user = await User.findOne({ email });
+// exports.checkUserAlreadyExists = async (req, res) => {
+//   try {
+//     const { phone_Number, email } = req.body;
+//     if (email && phone_Number) {
+//       return res
+//         .status(400)
+//         .json({
+//           success: false,
+//           message: "Provide either email or phone number, not both",
+//         });
+//     }
+//     if (!email && !phone_Number) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Provide email or phone number" });
+//     }
+//     if (email) {
+//       if (phone_Number) {
+//         const user = await User.findOne({ email });
 
-        if (user) {
-          return res
-            .status(200)
-            .json({ success: true, message: "User already exists" });
-        } else {
-          return res
-            .status(200)
-            .json({ success: false, message: "User does not exist" });
-        }
-      }
-    }
-    if (phone_Number) {
-      const user = await User.findOne({ phone_Number });
+//         if (user) {
+//           return res
+//             .status(200)
+//             .json({ success: true, message: "User already exists" });
+//         } else {
+//           return res
+//             .status(200)
+//             .json({ success: false, message: "User does not exist" });
+//         }
+//       }
+//     }
+//     if (phone_Number) {
+//       const user = await User.findOne({ phone_Number });
 
-      if (user) {
-        return res
-          .status(200)
-          .json({ success: true, message: "User already exists" });
-      } else {
-        return res
-          .status(200)
-          .json({ success: false, message: "User does not exist" });
-      }
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
+//       if (user) {
+//         return res
+//           .status(200)
+//           .json({ success: true, message: "User already exists" });
+//       } else {
+//         return res
+//           .status(200)
+//           .json({ success: false, message: "User does not exist" });
+//       }
+//     }
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
 
 // Login with email OR phone + password
 // exports.login = async (req, res) => {
@@ -940,6 +940,51 @@ exports.checkUserAlreadyExists = async (req, res) => {
 //     res.status(400).json({ success: false, error: error.message });
 //   }
 // };
+
+exports.checkUserAlreadyExists = async (req, res) => {
+  try {
+    const { phone_Number, email } = req.body;
+
+    // Allow only one identifier at a time
+    if (email && phone_Number) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide either email or phone number, not both",
+      });
+    }
+
+    if (!email && !phone_Number) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Provide email or phone number" });
+    }
+
+    let user;
+
+    // Check by email
+    if (email) {
+      user = await User.findOne({ email });
+    }
+
+    // Check by phone number
+    if (phone_Number) {
+      user = await User.findOne({ phone_Number });
+    }
+
+    if (user) {
+      return res
+        .status(200)
+        .json({ success: true, message: "User already exists" });
+    } else {
+      return res
+        .status(200)
+        .json({ success: false, message: "User does not exist" });
+    }
+  } catch (error) {
+    console.error("Error checking user:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 exports.login = async (req, res) => {
   try {
