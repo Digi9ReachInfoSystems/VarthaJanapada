@@ -742,28 +742,155 @@ const extractUserInfoFromFirebase = (decodedToken) => {
 };
 
 // Unified Signup with Firebase
+// exports.signup = async (req, res) => {
+//   try {
+//     const { firebaseUid, email, phone_Number, displayName, profileImage } =
+//       req.body;
+
+//     // Check if user already exists by firebaseUid, email, or phone
+//     const existingUser = await User.findOne({
+//       $or: [
+//         { firebaseUid: firebaseUid },
+//         // { email: userInfo.email },
+//         { phone_Number: phone_Number },
+//       ].filter((condition) => Object.values(condition)[0] !== null), // Remove null conditions
+//     });
+
+//     if (existingUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User already exists with this email or phone number",
+//       });
+//     }
+
+//     // Create new user
+//     const user = await User.create({
+//       firebaseUid,
+//       email,
+//       phone_Number,
+//       displayName,
+//       profileImage,
+//     });
+
+//     // Generate JWT tokens
+//     const { accessToken, refreshToken } = user.generateAuthToken();
+//     user.refreshToken = refreshToken;
+//     await user.save();
+
+//     // Set cookies
+//     setTokens(res, accessToken, refreshToken);
+
+//     // Return user data (excluding sensitive fields)
+//     const userResponse = user.toObject();
+//     delete userResponse.refreshToken;
+
+//     res.status(201).json({
+//       success: true,
+//       message: "User created successfully",
+//       data: userResponse,
+//       accessToken,
+//     });
+//   } catch (error) {
+//     console.error("Signup error:", error);
+
+//     // Handle specific Firebase errors
+//     if (error.code === "auth/id-token-expired") {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Firebase token expired",
+//       });
+//     }
+
+//     if (error.code === "auth/id-token-revoked") {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Firebase token revoked",
+//       });
+//     }
+
+//     if (error.code === "auth/argument-error") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Firebase token",
+//       });
+//     }
+
+//     res.status(500).json({
+//       success: false,
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 exports.signup = async (req, res) => {
   try {
-    const { firebaseUid, email, phone_Number, displayName, profileImage } =
-      req.body;
+    const { firebaseUid, email, phone_Number, displayName, profileImage } = req.body;
 
-    // Check if user already exists by firebaseUid, email, or phone
+    // Ensure at least one unique identifier
+    if (!firebaseUid && !email && !phone_Number) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide at least firebaseUid, email, or phone number",
+      });
+    }
+
+    // 1️⃣ Check if user exists by Firebase UID or Phone Number
     const existingUser = await User.findOne({
       $or: [
-        { firebaseUid: firebaseUid },
-        // { email: userInfo.email },
-        { phone_Number: phone_Number },
-      ].filter((condition) => Object.values(condition)[0] !== null), // Remove null conditions
+        firebaseUid ? { firebaseUid } : null,
+        phone_Number ? { phone_Number } : null,
+      ].filter(Boolean),
     });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists with this email or phone number",
+        message: "User already exists with this Firebase UID or phone number",
       });
     }
 
-    // Create new user
+    // 2️⃣ Check if email already exists — if so, link firebaseUid if missing
+    let existingEmailUser = null;
+    if (email) {
+      existingEmailUser = await User.findOne({ email });
+
+      // If email exists but firebaseUid not linked yet, attach it
+      if (existingEmailUser && !existingEmailUser.firebaseUid) {
+        existingEmailUser.firebaseUid = firebaseUid;
+        if (displayName) existingEmailUser.displayName = displayName;
+        if (profileImage) existingEmailUser.profileImage = profileImage;
+        await existingEmailUser.save();
+
+        // Generate JWT tokens
+        const { accessToken, refreshToken } = existingEmailUser.generateAuthToken();
+        existingEmailUser.refreshToken = refreshToken;
+        await existingEmailUser.save();
+
+        // Set cookies
+        setTokens(res, accessToken, refreshToken);
+
+        const userResponse = existingEmailUser.toObject();
+        delete userResponse.refreshToken;
+
+        return res.status(200).json({
+          success: true,
+          message: "Firebase UID linked to existing user",
+          data: userResponse,
+          accessToken,
+        });
+      }
+
+      // If email already used with another firebaseUid, block signup
+      if (existingEmailUser && existingEmailUser.firebaseUid !== firebaseUid) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already associated with another Firebase UID",
+        });
+      }
+    }
+
+    // 3️⃣ Create new user
     const user = await User.create({
       firebaseUid,
       email,
@@ -772,15 +899,15 @@ exports.signup = async (req, res) => {
       profileImage,
     });
 
-    // Generate JWT tokens
+    // 4️⃣ Generate JWT tokens
     const { accessToken, refreshToken } = user.generateAuthToken();
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Set cookies
+    // 5️⃣ Set cookies
     setTokens(res, accessToken, refreshToken);
 
-    // Return user data (excluding sensitive fields)
+    // 6️⃣ Prepare clean response
     const userResponse = user.toObject();
     delete userResponse.refreshToken;
 
@@ -793,21 +920,19 @@ exports.signup = async (req, res) => {
   } catch (error) {
     console.error("Signup error:", error);
 
-    // Handle specific Firebase errors
+    // Handle Firebase-specific errors
     if (error.code === "auth/id-token-expired") {
       return res.status(401).json({
         success: false,
         message: "Firebase token expired",
       });
     }
-
     if (error.code === "auth/id-token-revoked") {
       return res.status(401).json({
         success: false,
         message: "Firebase token revoked",
       });
     }
-
     if (error.code === "auth/argument-error") {
       return res.status(400).json({
         success: false,
@@ -821,6 +946,7 @@ exports.signup = async (req, res) => {
     });
   }
 };
+
 
 exports.getUserByFirebaseUserId = async (req, res) => {
   try {
