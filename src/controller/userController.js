@@ -185,13 +185,63 @@ exports.recommendCategory = async (req, res) => {
   }
 };
 
+// exports.updateUserProfile = async (req, res) => {
+//   try {
+//     const { firebaseUid } = req.params;
+//     const { displayName, email, profileImage } = req.body;
+
+
+   
+//     // Validate that at least one field is provided
+//     if (!displayName && !email && !profileImage) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "No update fields provided" });
+//     }
+
+//     // Check if email is unique
+//     if (email) {
+//       const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+//       if (existingUser) {
+//         return res
+//           .status(400)
+//           .json({ success: false, message: "Email is already in use" });
+//       }
+//     }
+// const user = await User.findOne({ firebaseUid });
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+//     // Update the user profile
+//     const updatedUser = await User.findByIdAndUpdate(
+//       user._id,
+//       { $set: { displayName, email, profileImage } },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!updatedUser) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Profile updated successfully",
+//       data: updatedUser,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 exports.updateUserProfile = async (req, res) => {
   try {
     const { firebaseUid } = req.params;
     const { displayName, email, profileImage } = req.body;
 
-
-   
     // Validate that at least one field is provided
     if (!displayName && !email && !profileImage) {
       return res
@@ -199,33 +249,39 @@ exports.updateUserProfile = async (req, res) => {
         .json({ success: false, message: "No update fields provided" });
     }
 
-    // Check if email is unique
+    // Find the user by firebaseUid
+    const user = await User.findOne({ firebaseUid });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Check if email is unique (exclude the current user)
     if (email) {
-      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: user._id },
+      });
       if (existingUser) {
         return res
           .status(400)
           .json({ success: false, message: "Email is already in use" });
       }
     }
-const user = await User.findOne({ firebaseUid });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-    // Update the user profile
+
+    // Build update object dynamically
+    const updateFields = {};
+    if (displayName) updateFields.displayName = displayName;
+    if (email) updateFields.email = email;
+    if (profileImage) updateFields.profileImage = profileImage;
+
+    // Update the user
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
-      { $set: { displayName, email, profileImage } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
-
-    if (!updatedUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
 
     res.status(200).json({
       success: true,
