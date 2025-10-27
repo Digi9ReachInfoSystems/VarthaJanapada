@@ -46,5 +46,6 @@ router.get("/getuserbyfirebaseuid/:firebaseUid",  authController.getUserByFireba
 router.post("/checkuser-exists", authController.checkUserAlreadyExists);
 router.post("/refresh-token", authController.refreshToken);
 router.post("/logout", authenticateJWT, authController.logout);
+router.post("/verify", authController.verifyUserToken); 
 
 module.exports = router;

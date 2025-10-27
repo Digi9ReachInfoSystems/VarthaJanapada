@@ -1346,3 +1346,76 @@ exports.checkUserByPhoneNumber = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+
+
+
+
+exports.verifyUserToken = async (req, res) => {
+  try {
+    const { accessToken, userId } = req.body;
+
+    if (!accessToken && !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Either accessToken or userId must be provided",
+      });
+    }
+
+    // Case 1️⃣: If accessToken is provided, verify the token directly
+    if (accessToken) {
+      try {
+        const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+          return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Access token is valid",
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            displayName: user.displayName,
+          },
+        });
+      } catch (err) {
+        if (err.name === "TokenExpiredError") {
+          return res.status(401).json({ success: false, message: "Access token expired" });
+        }
+        return res.status(401).json({ success: false, message: "Invalid access token" });
+      }
+    }
+
+    // Case 2️⃣: If only userId is provided, check if user exists
+    if (userId) {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Access token for user id is valid",
+        user: {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          displayName: user.displayName,
+        },
+      });
+    }
+
+  } catch (error) {
+    console.error("Error verifying token:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
