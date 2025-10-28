@@ -12,7 +12,7 @@ router.get("/users", userController.getAllUsers);
 router.get("/new-users", userController.getNewUsersCount);
 
 // Route to get a specific user by ID
-router.get("/users/:id",authenticateJWT, allowedRoles(['admin','moderator']), userController.getUserById);
+router.get("/users/:id",authenticateJWT, allowedRoles(['admin','moderator','user']), userController.getUserById);
 // router.get("/user/recent", userController.recentUser);
 
 // Route to delete a user
