@@ -36,21 +36,36 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // ✅ Secure CORS settings
+// const corsOptions = {
+//   origin: [
+//     "https://diprwebapp.gully2global.in",
+//     "https://dipradmin.gully2global.in",
+//     "https://dipr.vercel.app",
+    
+//     "http://localhost:5173",
+//     "http://localhost:5174",
+//     "https://frontend-digi9.vercel.app",
+//     "http://164.164.198.29:8192",
+//     "https://diprkarnataka.duckdns.org"
+//   ],
+//   credentials: true,
+// };
+
 const corsOptions = {
   origin: [
-    "https://diprwebapp.gully2global.in",
-    "https://dipradmin.gully2global.in",
-    "https://dipr.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
     "https://frontend-digi9.vercel.app",
-    "http://164.164.198.29:8192",
-    "https://diprkarnataka.duckdns.org"
+    "https://dipr.vercel.app",
+    "https://dipradmin.gully2global.in",
+    "https://diprwebapp.gully2global.in",
+    "https://vartha-janapada.vercel.app"
   ],
   credentials: true,
 };
-
 app.use(cors(corsOptions));
+
+
 
 app.use(
   helmet({
