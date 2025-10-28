@@ -285,13 +285,15 @@ exports.getAllNews = async (req, res) => {
       .sort({ createdTime: -1 })
       .populate("category")
       .populate("tags", "name")
-      .populate("createdBy");
+      .populate("createdBy")
+      .sort({ createdTime: -1 });
 
     res.status(200).json({ success: true, data: newsList });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.getNewsById = async (req, res) => {
   try {
     const news = await News.findById(req.params.id)
@@ -748,10 +750,6 @@ exports.getNewsByNewsType = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
-
-
 
 exports.addNewsToPlaylist = async (req, res) => {
   try {

@@ -513,8 +513,7 @@ exports.updateVideo = async (req, res) => {
       },
     });
 
-    console.log(`Saved version ${currentVersionNumber} with title: ${video.title}`);
-
+  
     // STEP 2: Apply updates to the video (no translation)
     if (updatedData.title !== undefined) video.title = updatedData.title;
     if (updatedData.description !== undefined) video.description = updatedData.description;
@@ -560,8 +559,6 @@ exports.updateVideo = async (req, res) => {
 
     const updatedVideo = await video.save();
 
-    console.log(`Updated to new title: ${updatedVideo.title}`);
-
     res.status(200).json({
       success: true,
       data: updatedVideo,
@@ -582,8 +579,7 @@ exports.revertVideoToVersion = async (req, res) => {
     // We want to revert TO this target version
     const targetVersionNumber = currentVersionNumber - 1;
 
-    console.log(`Reverting from version ${currentVersionNumber} to version ${targetVersionNumber}`);
-
+ 
     // Find the target version we want to revert TO
     const targetVersion = await VideoVersion.findOne({
       videoId: id,
@@ -597,8 +593,7 @@ exports.revertVideoToVersion = async (req, res) => {
       });
     }
 
-    console.log(`Found target version ${targetVersionNumber} with title: ${targetVersion.snapshot.title}`);
-
+  
     // Restore the video to the target version state
     const restoredVideo = await Videos.findByIdAndUpdate(
       id,
@@ -613,16 +608,14 @@ exports.revertVideoToVersion = async (req, res) => {
       });
     }
 
-    console.log(`Restored video title to: ${restoredVideo.title}`);
-
+   
     // Delete the current version that we're reverting FROM
     const deleteResult = await VideoVersion.deleteOne({
       videoId: id,
       versionNumber: currentVersionNumber,
     });
 
-    console.log(`Deleted version ${currentVersionNumber}, deleted count: ${deleteResult.deletedCount}`);
-
+  
     res.status(200).json({ 
       success: true, 
       data: restoredVideo,

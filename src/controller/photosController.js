@@ -32,8 +32,6 @@ const createPhotos = async (req, res) => {
   try {
     const { photoImage,title } = req.body;
     const user = req.user;
-console.log("user",user);
-console.log("photoImage",photoImage);
     if (!photoImage) {
       return res.status(400).json({
         success: false,

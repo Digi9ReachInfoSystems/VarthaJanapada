@@ -49,7 +49,7 @@ exports.getAllComments = async (req, res) => {
     res.status(200).json({ success: true, data: comments });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
-    console.log(error);
+    // console.log(error);
   }
 };
 exports.getCommentByNewsId = async (req, res) => {
@@ -198,6 +198,19 @@ exports.toggleLikeLongVideo = async (req, res) => {
     await longVideo.save();
 
     res.status(200).json({ success: true, totalLikes: longVideo.total_Likes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+exports.getCommentsByNewsIdandUserId = async (req, res) => {
+  try {
+    const { newsId, userId } = req.params;
+    const comments = await Comment.find({ news: newsId, user: userId })
+      .populate("user", "email displayName")
+      .populate("news", "title");
+    res.status(200).json(comments);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

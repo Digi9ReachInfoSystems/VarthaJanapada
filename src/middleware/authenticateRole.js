@@ -90,22 +90,19 @@ function extractAccessToken(req) {
 }
 
 const authenticateJWT = async (req, res, next) => {
-  console.log("🟡 authenticateJWT triggered");
 
   const token = extractAccessToken(req);
-  console.log("🔹 Extracted token:", token ? "present" : "missing");
-
+ 
   if (!token) {
     return res.status(401).json({ success: false, message: "Access denied: missing token" });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    console.log("✅ Decoded:", decoded);
+
     const user = await User.findById(decoded.id).lean();
     if (!user) return res.status(401).json({ success: false, message: "Invalid token: user not found" });
 
-    console.log("👤 Found user:", user.email, "| role:", user.role);
     if (user.isBlocked) {
       return res.status(403).json({ success: false, message: "Account is blocked" });
     }
