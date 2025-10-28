@@ -487,10 +487,53 @@ const deleteMagazine = async (req, res) => {
 };
 
 
+// const getMagazinesByYear = async (req, res) => {
+//   try {
+//     const { year } = req.params;
+//     console.log("year", year);
+
+//     // ✅ Validate year format (must be 4 digits)
+//     if (!/^\d{4}$/.test(year)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid year format. Use YYYY (e.g., 2025)",
+//       });
+//     }
+
+//     // ✅ Find all magazines where publishedYear matches the requested year
+//     const magazines = await Magazine.find({ publishedYear: year })
+//       .sort({ createdTime: -1 })
+//       .populate("createdBy", "displayName email role");
+
+//     // ✅ Return 200 with empty data array if none found
+//     if (!magazines.length) {
+//       return res.status(200).json({
+//         success: true,
+//         message: `No magazines found for year ${year}`,
+//         count: 0,
+//         data: [],
+//       });
+//     }
+
+//     // ✅ Success response with data
+//     res.status(200).json({
+//       success: true,
+//       count: magazines.length,
+//       data: magazines,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching magazines by year:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Internal server error",
+//     });
+//   }
+// };
+
+
 const getMagazinesByYear = async (req, res) => {
   try {
     const { year } = req.params;
-    console.log("year", year);
 
     // ✅ Validate year format (must be 4 digits)
     if (!/^\d{4}$/.test(year)) {
@@ -500,12 +543,12 @@ const getMagazinesByYear = async (req, res) => {
       });
     }
 
-    // ✅ Find all magazines where publishedYear matches the requested year
+    // ✅ Find all magazines for the given year
     const magazines = await Magazine.find({ publishedYear: year })
-      .sort({ createdTime: -1 })
-      .populate("createdBy", "displayName email role");
+      .populate("createdBy", "displayName email role")
+      .lean();
 
-    // ✅ Return 200 with empty data array if none found
+    // ✅ Return 200 with empty array if none found
     if (!magazines.length) {
       return res.status(200).json({
         success: true,
@@ -515,11 +558,39 @@ const getMagazinesByYear = async (req, res) => {
       });
     }
 
-    // ✅ Success response with data
+    // ✅ Month order mapping (case-insensitive)
+    const monthOrder = {
+      january: 1,
+      february: 2,
+      march: 3,
+      april: 4,
+      may: 5,
+      june: 6,
+      july: 7,
+      august: 8,
+      september: 9,
+      october: 10,
+      november: 11,
+      december: 12,
+    };
+
+    // ✅ Sort by month (Jan → Dec), and within same month by createdTime DESC
+    const sortedMagazines = magazines.sort((a, b) => {
+      const monthA = monthOrder[a.publishedMonth?.toLowerCase()] || 13;
+      const monthB = monthOrder[b.publishedMonth?.toLowerCase()] || 13;
+
+      // Sort by month ascending
+      if (monthA !== monthB) return monthA - monthB;
+
+      // Within same month, latest createdTime first
+      return new Date(b.createdTime) - new Date(a.createdTime);
+    });
+
+    // ✅ Return response
     res.status(200).json({
       success: true,
-      count: magazines.length,
-      data: magazines,
+      count: sortedMagazines.length,
+      data: sortedMagazines,
     });
   } catch (error) {
     console.error("Error fetching magazines by year:", error);
@@ -529,6 +600,7 @@ const getMagazinesByYear = async (req, res) => {
     });
   }
 };
+
 
 const User = require("../models/userModel");
 const addMarchOfKarnatakaToPlaylist = async (req, res) => {

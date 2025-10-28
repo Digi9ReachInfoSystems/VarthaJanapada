@@ -240,10 +240,10 @@ exports.recommendCategory = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
     const { firebaseUid } = req.params;
-    const { displayName, email, profileImage } = req.body;
+    const { displayName, email, profileImage, phone_Number } = req.body;
 
     // Validate that at least one field is provided
-    if (!displayName && !email && !profileImage) {
+    if (!displayName && !email && !profileImage && !phone_Number) {
       return res
         .status(400)
         .json({ success: false, message: "No update fields provided" });
@@ -275,6 +275,7 @@ exports.updateUserProfile = async (req, res) => {
     if (displayName) updateFields.displayName = displayName;
     if (email) updateFields.email = email;
     if (profileImage) updateFields.profileImage = profileImage;
+    if (phone_Number) updateFields.phone_Number = phone_Number;
 
     // Update the user
     const updatedUser = await User.findByIdAndUpdate(
@@ -421,7 +422,7 @@ exports.loginOnWeb = async (req, res) => {
 
     // Verify Firebase ID Token
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    console.log("Decoded Token:", decodedToken);
+
 
     // Extract phone number from Firebase Token
     const firebasePhoneNumber = decodedToken.phone_number;
