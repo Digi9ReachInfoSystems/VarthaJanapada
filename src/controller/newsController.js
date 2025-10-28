@@ -744,7 +744,8 @@ exports.deleteVersion = async (req, res) => {
 exports.getNewsByNewsType = async (req, res) => {
   try {
     const { newsType } = req.params;
-    const news = await News.find({ newsType });
+    const news = await News.find({ newsType })
+    .sort({ createdTime: -1 });
     res.status(200).json({ success: true, data: news });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
