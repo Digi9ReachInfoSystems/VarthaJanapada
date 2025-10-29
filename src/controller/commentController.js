@@ -42,7 +42,7 @@ exports.getAllComments = async (req, res) => {
     const comments = await Comment.find()
     //populate email
       // .populate("user", "email")
-      .populate("user", "email displayName") // Populating user with the displayName field
+      .populate("user", "email displayName phone_Number") // Populating user with the displayName field
       .populate("news", "title") // Populating news with the title field
       .populate("video", "title"); // Populating video with the title field (corrected model name)
     // .populate("longVideoRef", "title"); // Populating longVideoRef with the title field
