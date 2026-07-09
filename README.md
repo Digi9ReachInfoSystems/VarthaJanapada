@@ -11,4 +11,4 @@ AStidMshg==
 EndpointSuffix=core.windows.net
 AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=diprstorage;AccountKey=kok5013mu3ichkiPfXuND7f4DQ6wpuhbTh7s76pQ/Ufa661AFIzQcS7ryUOLgDqeXZ8GNRzbKD/S+AStidMshg==;EndpointSuffix=core.windows.net
 
-//
+/
