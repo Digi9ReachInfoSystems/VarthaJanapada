@@ -119,4 +119,6 @@ const newsSchema = new mongoose.Schema({
   },
 });
 
+newsSchema.index({ newsType: 1, createdTime: -1 });
+
 module.exports = mongoose.model("News", newsSchema);

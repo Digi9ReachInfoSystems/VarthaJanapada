@@ -2,8 +2,11 @@
   "name": "varthajanapada",
   "version": "1.0.0",
   "description": "news app for Dipr department ",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "node scripts/free-port.js && node index.js",
+    "free-port": "node scripts/free-port.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

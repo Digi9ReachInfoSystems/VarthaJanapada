@@ -5,6 +5,7 @@ const helmet = require("helmet"); // ✅ for security headers
 const connectDB = require("./src/config/mongoConnect");
 
 const newsRoutes = require("./src/routes/newsRoutes");
+const newsPaginatedRoutes = require("./src/routes/newsPaginatedRoutes");
 const categoryRoutes = require("./src/routes/categoryRoutes");
 const tagRoutes = require("./src/routes/tagRoutes");
 const userRoutes = require("./src/routes/userRoutes");
@@ -12,8 +13,10 @@ const authRoutes = require("./src/routes/authRoutes");
 const bannerRoutes = require("./src/routes/bannerRoutes");
 const commentRoutes = require("./src/routes/commentRoutes");
 const videoRoutes = require("./src/routes/videoRoutes");
+const videoPaginatedRoutes = require("./src/routes/videoPaginatedRoutes");
 const magazine = require("./src/routes/magazineRoutes");
 const longVideo = require("./src/routes/longVideoRoutes");
+const longVideoPaginatedRoutes = require("./src/routes/longVideoPaginatedRoutes");
 const sessionRoutes = require("./src/routes/sessionRoutes");
 const visitorRoutes = require("./src/routes/visitorRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
@@ -142,6 +145,7 @@ connectDB();
 app.use(express.json());
 
 app.use("/api/news", newsRoutes);
+app.use("/api/news-new", newsPaginatedRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/users", userRoutes);
@@ -149,8 +153,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/banner", bannerRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/video", videoRoutes);
+app.use("/api/video-new", videoPaginatedRoutes);
 app.use("/api/magazine", magazine);
 app.use("/api/longVideo", longVideo);
+app.use("/api/longVideo-new", longVideoPaginatedRoutes);
 app.use("/sessions", sessionRoutes);
 app.use("/visitors", visitorRoutes);
 app.use("/notifications", notificationRoutes);
@@ -170,7 +176,18 @@ app.get("/", (req, res) => {
   res.send("Server running securely!");
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(` Secure server running on port ${port}`);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${port} is already in use. Run: npm run free-port`);
+    console.error("Then start again with: npm run dev");
+    process.exit(1);
+  }
+
+  console.error("Server failed to start:", err.message);
+  process.exit(1);
 });
 

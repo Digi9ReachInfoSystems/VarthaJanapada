@@ -84,4 +84,6 @@ const LongVideoSchema = new mongoose.Schema({
   },
 });
 
+LongVideoSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model("LongVideo", LongVideoSchema);
