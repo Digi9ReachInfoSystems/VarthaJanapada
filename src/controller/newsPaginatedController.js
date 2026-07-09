@@ -1,6 +1,25 @@
 const News = require("../models/newsModel");
 
 const VALID_NEWS_TYPES = ["statenews", "districtnews", "specialnews"];
+const VALID_MAGAZINE_TYPES = ["magazine", "magazine2"];
+
+function parseMagazineTypeQuery(req, res) {
+  const { magazineType } = req.query;
+
+  if (magazineType === undefined) {
+    return { ok: true, magazineType: undefined };
+  }
+
+  if (!VALID_MAGAZINE_TYPES.includes(magazineType)) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid magazineType. Use 'magazine' or 'magazine2'.",
+    });
+    return { ok: false };
+  }
+
+  return { ok: true, magazineType };
+}
 
 exports.getNewsByNewsTypePaginated = async (req, res) => {
   try {
@@ -39,8 +58,14 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
       });
     }
 
+    const magazineResult = parseMagazineTypeQuery(req, res);
+    if (!magazineResult.ok) return;
+
     const skip = (page - 1) * limit;
     const filter = { newsType };
+    if (magazineResult.magazineType) {
+      filter.magazineType = magazineResult.magazineType;
+    }
 
     const [data, totalRecords] = await Promise.all([
       News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
@@ -93,8 +118,14 @@ exports.getLatestCombinedNewsPaginated = async (req, res) => {
       });
     }
 
+    const magazineResult = parseMagazineTypeQuery(req, res);
+    if (!magazineResult.ok) return;
+
     const skip = (page - 1) * limit;
     const filter = { newsType: { $in: ["statenews", "specialnews"] } };
+    if (magazineResult.magazineType) {
+      filter.magazineType = magazineResult.magazineType;
+    }
 
     const [data, totalRecords] = await Promise.all([
       News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
