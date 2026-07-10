@@ -140,17 +140,25 @@ const extractUserInfoFromFirebase = (decodedToken) => {
 
 exports.signup = async (req, res) => {
   try {
-    const { firebaseUid, email, phone_Number, displayName, profileImage } = req.body;
+    let { firebaseUid, email, phone_Number, displayName, profileImage } = req.body;
 
-    // Ensure at least one unique identifier
-    if (!firebaseUid && !email && !phone_Number) {
+    // Email is optional and not unique — normalize blank to undefined
+    if (typeof email === "string") {
+      email = email.trim();
+    }
+    if (!email) {
+      email = undefined;
+    }
+
+    // Ensure at least one unique identifier (phone and/or firebaseUid preferred)
+    if (!firebaseUid && !phone_Number) {
       return res.status(400).json({
         success: false,
-        message: "Provide at least firebaseUid, email, or phone number",
+        message: "Provide at least firebaseUid or phone number",
       });
     }
 
-    // 1️⃣ Check if user exists by Firebase UID or Phone Number
+    // Check if user exists by Firebase UID or Phone Number only (email is not unique)
     const existingUser = await User.findOne({
       $or: [
         firebaseUid ? { firebaseUid } : null,
@@ -165,47 +173,7 @@ exports.signup = async (req, res) => {
       });
     }
 
-    // 2️⃣ Check if email already exists — if so, link firebaseUid if missing
-    let existingEmailUser = null;
-    if (email) {
-      existingEmailUser = await User.findOne({ email });
-
-      // If email exists but firebaseUid not linked yet, attach it
-      if (existingEmailUser && !existingEmailUser.firebaseUid) {
-        existingEmailUser.firebaseUid = firebaseUid;
-        if (displayName) existingEmailUser.displayName = displayName;
-        if (profileImage) existingEmailUser.profileImage = profileImage;
-        await existingEmailUser.save();
-
-        // Generate JWT tokens
-        const { accessToken, refreshToken } = existingEmailUser.generateAuthToken();
-        existingEmailUser.refreshToken = refreshToken;
-        await existingEmailUser.save();
-
-        // Set cookies
-        setTokens(res, accessToken, refreshToken);
-
-        const userResponse = existingEmailUser.toObject();
-        delete userResponse.refreshToken;
-
-        return res.status(200).json({
-          success: true,
-          message: "Firebase UID linked to existing user",
-          data: userResponse,
-          accessToken,
-        });
-      }
-
-      // If email already used with another firebaseUid, block signup
-      if (existingEmailUser && existingEmailUser.firebaseUid !== firebaseUid) {
-        return res.status(400).json({
-          success: false,
-          message: "Email already associated with another Firebase UID",
-        });
-      }
-    }
-
-    // 3️⃣ Create new user
+    // Create new user (email optional; may be shared across users)
     const user = await User.create({
       firebaseUid,
       email,
@@ -394,16 +362,17 @@ exports.createUserWithRole = async (req, res) => {
         .status(400)
         .json({ success: false, message: "displayName is required" });
     }
-    if (email && !validateEmail(email)) {
+    let normalizedEmail = email;
+    if (typeof normalizedEmail === "string") {
+      normalizedEmail = normalizedEmail.trim();
+    }
+    if (!normalizedEmail) {
+      normalizedEmail = undefined;
+    }
+    if (normalizedEmail && !validateEmail(normalizedEmail)) {
       return res.status(400).json({ success: false, message: "Invalid email" });
     }
-    if (email) {
-      const emailExists = await User.findOne({ email });
-      if (emailExists)
-        return res
-          .status(400)
-          .json({ success: false, message: "Email already registered" });
-    }
+    // Email is not unique — only phone blocks duplicates
     if (phone_Number) {
       const phoneExists = await User.findOne({ phone_Number });
       if (phoneExists)
@@ -429,7 +398,7 @@ exports.createUserWithRole = async (req, res) => {
       phone_Number,
       displayName,
       profileImage,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role,
     });
