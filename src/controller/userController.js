@@ -240,7 +240,15 @@ exports.recommendCategory = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
     const { firebaseUid } = req.params;
-    const { displayName, email, profileImage, phone_Number } = req.body;
+    let { displayName, email, profileImage, phone_Number } = req.body;
+
+    // Email is optional and not unique — normalize blank
+    if (typeof email === "string") {
+      email = email.trim();
+    }
+    if (!email) {
+      email = undefined;
+    }
 
     // Validate that at least one field is provided
     if (!displayName && !email && !profileImage && !phone_Number) {
@@ -257,20 +265,7 @@ exports.updateUserProfile = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Check if email is unique (exclude the current user)
-    if (email) {
-      const existingUser = await User.findOne({
-        email,
-        _id: { $ne: user._id },
-      });
-      if (existingUser) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Email is already in use" });
-      }
-    }
-
-    // Build update object dynamically
+    // Build update object dynamically (email may be shared across users)
     const updateFields = {};
     if (displayName) updateFields.displayName = displayName;
     if (email) updateFields.email = email;
@@ -555,34 +550,37 @@ exports.deleteUser = async (req, res) => {
 exports.updateAdminProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { displayName, email, profileImage } = req.body;
+    let { displayName, email, profileImage } = req.body;
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid admin ID" });
     }
+
+    // Email is optional and not unique — normalize blank
+    if (typeof email === "string") {
+      email = email.trim();
+    }
+    if (!email) {
+      email = undefined;
+    }
+
     // Validate that at least one field is provided
     if (!displayName && !email && !profileImage) {
       return res
         .status(400)
         .json({ success: false, message: "No update fields provided" });
     }
-    // Check if email is unique
-    if (email) {
-      const existingUser = await User
 
-        .findOne({ email, _id: { $ne: userId } });
-      if (existingUser) {
-        return res
+    const updateFields = {};
+    if (displayName) updateFields.displayName = displayName;
+    if (email) updateFields.email = email;
+    if (profileImage) updateFields.profileImage = profileImage;
 
-          .status(400)
-          .json({ success: false, message: "Email is already in use" });
-      }
-    }
     const updatedAdmin = await User.findByIdAndUpdate(
       userId,
-      { $set: { displayName, email, profileImage } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
     if (!updatedAdmin) {
