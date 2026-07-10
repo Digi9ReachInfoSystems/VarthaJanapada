@@ -8,6 +8,11 @@ router.get(
 );
 
 router.get(
+  "/getAllLatestNews",
+  newsPaginatedController.getAllLatestNewsPaginated
+);
+
+router.get(
   "/getNewsByNewsType/:newsType",
   newsPaginatedController.getNewsByNewsTypePaginated
 );
