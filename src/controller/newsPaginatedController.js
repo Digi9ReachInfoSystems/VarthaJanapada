@@ -1,7 +1,59 @@
 const News = require("../models/newsModel");
 
-const VALID_NEWS_TYPES = ["statenews", "districtnews", "specialnews", "articles"];
+const VALID_NEWS_TYPES = [
+  "statenews",
+  "districtnews",
+  "specialnews",
+  "articles",
+  "combinedlatestnews",
+];
 const VALID_MAGAZINE_TYPES = ["magazine", "magazine2"];
+const HOMEPAGE_LIMIT = 10;
+const SPECIAL_NEWS_HOMEPAGE_SLOTS = 4;
+
+function buildCombinedLatestFilter(magazineType) {
+  const filter = { newsType: { $in: ["statenews", "specialnews"] } };
+  if (magazineType) {
+    filter.magazineType = magazineType;
+  }
+  return filter;
+}
+
+function sortByCreatedTimeDesc(items) {
+  return items.sort(
+    (a, b) => new Date(b.createdTime) - new Date(a.createdTime)
+  );
+}
+
+async function fetchCombinedHomepageNews(filter) {
+  const stateNewsSlots = HOMEPAGE_LIMIT - SPECIAL_NEWS_HOMEPAGE_SLOTS;
+
+  const [specialNews, stateNews, totalRecords] = await Promise.all([
+    News.find({ ...filter, newsType: "specialnews" })
+      .sort({ createdTime: -1 })
+      .limit(SPECIAL_NEWS_HOMEPAGE_SLOTS),
+    News.find({ ...filter, newsType: "statenews" })
+      .sort({ createdTime: -1 })
+      .limit(stateNewsSlots),
+    News.countDocuments(filter),
+  ]);
+
+  const data = sortByCreatedTimeDesc([...specialNews, ...stateNews]);
+  const totalPages =
+    totalRecords === 0 ? 0 : Math.ceil(totalRecords / HOMEPAGE_LIMIT);
+
+  return { data, totalRecords, totalPages, limit: HOMEPAGE_LIMIT };
+}
+
+async function fetchCombinedPaginatedNews(filter, skip, limit) {
+  const [data, totalRecords] = await Promise.all([
+    News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
+    News.countDocuments(filter),
+  ]);
+
+  const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
+  return { data, totalRecords, totalPages, limit };
+}
 
 function parseMagazineTypeQuery(req, res) {
   const { magazineType } = req.query;
@@ -29,7 +81,7 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Invalid newsType. Use 'statenews', 'districtnews', 'specialnews', or 'articles'.",
+          "Invalid newsType. Use 'statenews', 'districtnews', 'specialnews', 'articles', or 'combinedlatestnews'.",
       });
     }
 
@@ -62,17 +114,52 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
     if (!magazineResult.ok) return;
 
     const skip = (page - 1) * limit;
-    const filter = { newsType };
-    if (magazineResult.magazineType) {
+
+    if (newsType === "combinedlatestnews" && homepage) {
+      const filter = buildCombinedLatestFilter(magazineResult.magazineType);
+      const result = await fetchCombinedHomepageNews(filter);
+
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        pagination: {
+          currentPage: 1,
+          totalPages: result.totalPages,
+          totalRecords: result.totalRecords,
+          limit: result.limit,
+          hasNextPage: result.totalPages > 1,
+          hasPreviousPage: false,
+        },
+      });
+    }
+
+    const filter =
+      newsType === "combinedlatestnews"
+        ? buildCombinedLatestFilter(magazineResult.magazineType)
+        : { newsType };
+    if (newsType !== "combinedlatestnews" && magazineResult.magazineType) {
       filter.magazineType = magazineResult.magazineType;
     }
 
-    const [data, totalRecords] = await Promise.all([
-      News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
-      News.countDocuments(filter),
-    ]);
+    let data;
+    let totalRecords;
+    let totalPages;
+    let responseLimit;
 
-    const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
+    if (newsType === "combinedlatestnews") {
+      const result = await fetchCombinedPaginatedNews(filter, skip, limit);
+      data = result.data;
+      totalRecords = result.totalRecords;
+      totalPages = result.totalPages;
+      responseLimit = result.limit;
+    } else {
+      [data, totalRecords] = await Promise.all([
+        News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
+        News.countDocuments(filter),
+      ]);
+      totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
+      responseLimit = limit;
+    }
 
     res.status(200).json({
       success: true,
@@ -81,7 +168,7 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
         currentPage: page,
         totalPages,
         totalRecords,
-        limit,
+        limit: responseLimit,
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1 && totalPages > 0,
       },
@@ -122,10 +209,7 @@ exports.getLatestCombinedNewsPaginated = async (req, res) => {
     if (!magazineResult.ok) return;
 
     const skip = (page - 1) * limit;
-    const filter = { newsType: { $in: ["statenews", "specialnews"] } };
-    if (magazineResult.magazineType) {
-      filter.magazineType = magazineResult.magazineType;
-    }
+    const filter = buildCombinedLatestFilter(magazineResult.magazineType);
 
     const [data, totalRecords] = await Promise.all([
       News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),

@@ -29,7 +29,7 @@ exports.getAllVideosPaginated = async (req, res) => {
 
     const limit = homepage
       ? 10
-      : Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+      : Math.min(Math.max(parseInt(req.query.limit, 10) || 30, 1), 50);
 
     if (
       !homepage &&
