@@ -20,6 +20,12 @@ const newsSchema = new mongoose.Schema({
     enum: ["statenews", "districtnews", "specialnews"],
   },
 
+  district_slug: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  },
+
   description: {
     type: String,
     required: true,
@@ -120,5 +126,7 @@ const newsSchema = new mongoose.Schema({
 });
 
 newsSchema.index({ newsType: 1, createdTime: -1 });
+newsSchema.index({ newsType: 1, district_slug: 1, createdTime: -1 });
+newsSchema.index({ newsType: 1, district_slug: 1, publishedAt: -1 });
 
 module.exports = mongoose.model("News", newsSchema);

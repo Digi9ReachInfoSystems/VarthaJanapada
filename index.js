@@ -6,6 +6,7 @@ const connectDB = require("./src/config/mongoConnect");
 
 const newsRoutes = require("./src/routes/newsRoutes");
 const newsPaginatedRoutes = require("./src/routes/newsPaginatedRoutes");
+const districtsNewRoutes = require("./src/routes/districtsNewRoutes");
 const categoryRoutes = require("./src/routes/categoryRoutes");
 const tagRoutes = require("./src/routes/tagRoutes");
 const userRoutes = require("./src/routes/userRoutes");
@@ -146,6 +147,7 @@ app.use(express.json());
 
 app.use("/api/news", newsRoutes);
 app.use("/api/news-new", newsPaginatedRoutes);
+app.use("/api/districts-new", districtsNewRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/users", userRoutes);
