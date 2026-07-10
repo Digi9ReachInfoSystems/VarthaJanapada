@@ -1,6 +1,6 @@
 const News = require("../models/newsModel");
 
-const VALID_NEWS_TYPES = ["statenews", "districtnews", "specialnews"];
+const VALID_NEWS_TYPES = ["statenews", "districtnews", "specialnews", "articles"];
 const VALID_MAGAZINE_TYPES = ["magazine", "magazine2"];
 
 function parseMagazineTypeQuery(req, res) {
@@ -29,7 +29,7 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Invalid newsType. Use 'statenews', 'districtnews', or 'specialnews'.",
+          "Invalid newsType. Use 'statenews', 'districtnews', 'specialnews', or 'articles'.",
       });
     }
 
