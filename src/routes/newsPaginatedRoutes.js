@@ -23,6 +23,11 @@ router.get(
 );
 
 router.get(
+  "/getArticles",
+  newsPaginatedController.getArticlesPaginated
+);
+
+router.get(
   "/getNewsByNewsType/:newsType",
   newsPaginatedController.getNewsByNewsTypePaginated
 );
