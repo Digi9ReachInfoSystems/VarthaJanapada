@@ -49,8 +49,9 @@ function parseDateQuery(req, res) {
     return { ok: false };
   }
 
-  const start = new Date(`${date}T00:00:00.000Z`);
-  const end = new Date(`${date}T23:59:59.999Z`);
+  // Calendar day in IST (Asia/Kolkata, UTC+05:30) so UI local dates match filter
+  const start = new Date(`${date}T00:00:00.000+05:30`);
+  const end = new Date(`${date}T23:59:59.999+05:30`);
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     res.status(400).json({

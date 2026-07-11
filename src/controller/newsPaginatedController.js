@@ -88,8 +88,9 @@ function parseDateQuery(req, res) {
     return { ok: false };
   }
 
-  const start = new Date(`${date}T00:00:00.000Z`);
-  const end = new Date(`${date}T23:59:59.999Z`);
+  // Calendar day in IST (Asia/Kolkata, UTC+05:30) so UI local dates match filter
+  const start = new Date(`${date}T00:00:00.000+05:30`);
+  const end = new Date(`${date}T23:59:59.999+05:30`);
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     res.status(400).json({
@@ -302,6 +303,138 @@ exports.getAllLatestNewsPaginated = async (req, res) => {
 
     const skip = (page - 1) * limit;
     const filter = buildCombinedLatestFilter(magazineResult.magazineType);
+    if (dateResult.dateRange) {
+      Object.assign(filter, dateResult.dateRange);
+    }
+
+    const [data, totalRecords] = await Promise.all([
+      News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
+      News.countDocuments(filter),
+    ]);
+
+    const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
+
+    res.status(200).json({
+      success: true,
+      data,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalRecords,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1 && totalPages > 0,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getStateNewsPaginated = async (req, res) => {
+  try {
+    const homepage = req.query.homepage === "true";
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+
+    if (req.query.page !== undefined && Number.isNaN(parseInt(req.query.page, 10))) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid page. Must be a positive number.",
+      });
+    }
+
+    const limit = homepage
+      ? 10
+      : Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+
+    if (
+      !homepage &&
+      req.query.limit !== undefined &&
+      Number.isNaN(parseInt(req.query.limit, 10))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid limit. Must be a number between 1 and 50.",
+      });
+    }
+
+    const magazineResult = parseMagazineTypeQuery(req, res);
+    if (!magazineResult.ok) return;
+
+    const dateResult = parseDateQuery(req, res);
+    if (!dateResult.ok) return;
+
+    const skip = (page - 1) * limit;
+    const filter = { newsType: "statenews" };
+    if (magazineResult.magazineType) {
+      filter.magazineType = magazineResult.magazineType;
+    }
+    if (dateResult.dateRange) {
+      Object.assign(filter, dateResult.dateRange);
+    }
+
+    const [data, totalRecords] = await Promise.all([
+      News.find(filter).sort({ createdTime: -1 }).skip(skip).limit(limit),
+      News.countDocuments(filter),
+    ]);
+
+    const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
+
+    res.status(200).json({
+      success: true,
+      data,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalRecords,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1 && totalPages > 0,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getSpecialNewsPaginated = async (req, res) => {
+  try {
+    const homepage = req.query.homepage === "true";
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+
+    if (req.query.page !== undefined && Number.isNaN(parseInt(req.query.page, 10))) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid page. Must be a positive number.",
+      });
+    }
+
+    const limit = homepage
+      ? 10
+      : Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+
+    if (
+      !homepage &&
+      req.query.limit !== undefined &&
+      Number.isNaN(parseInt(req.query.limit, 10))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid limit. Must be a number between 1 and 50.",
+      });
+    }
+
+    const magazineResult = parseMagazineTypeQuery(req, res);
+    if (!magazineResult.ok) return;
+
+    const dateResult = parseDateQuery(req, res);
+    if (!dateResult.ok) return;
+
+    const skip = (page - 1) * limit;
+    const filter = { newsType: "specialnews" };
+    if (magazineResult.magazineType) {
+      filter.magazineType = magazineResult.magazineType;
+    }
     if (dateResult.dateRange) {
       Object.assign(filter, dateResult.dateRange);
     }

@@ -13,6 +13,16 @@ router.get(
 );
 
 router.get(
+  "/getStateNews",
+  newsPaginatedController.getStateNewsPaginated
+);
+
+router.get(
+  "/getSpecialNews",
+  newsPaginatedController.getSpecialNewsPaginated
+);
+
+router.get(
   "/getNewsByNewsType/:newsType",
   newsPaginatedController.getNewsByNewsTypePaginated
 );
