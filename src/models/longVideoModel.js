@@ -36,8 +36,8 @@ const LongVideoSchema = new mongoose.Schema({
   ],
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Category",
-    required: true,
+    ref: "VideoCategory",
+    required: false,
   },
   Topics: {
     type: mongoose.Schema.Types.ObjectId,

@@ -108,7 +108,7 @@ exports.getAllVideos = async (req, res) => {
      ///populate category name 
      .populate({
       path: "category",
-      select: "name", // Select only the 'name' field from the Category model
+      select: "name category_name english hindi kannada",
     })
     res.status(200).json({ success: true, data: videos });
   } catch (error) {

@@ -1,4 +1,8 @@
+const mongoose = require("mongoose");
 const Videos = require("../models/longVideoModel");
+const {
+  ensureVideoCategoryData,
+} = require("./videoCategoryController");
 
 const populateVideos = (query) =>
   query
@@ -12,11 +16,13 @@ const populateVideos = (query) =>
     .populate("createdBy")
     .populate({
       path: "category",
-      select: "name",
+      select: "name category_name english hindi kannada",
     });
 
 exports.getAllVideosPaginated = async (req, res) => {
   try {
+    await ensureVideoCategoryData();
+
     const homepage = req.query.homepage === "true";
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
 
@@ -42,13 +48,26 @@ exports.getAllVideosPaginated = async (req, res) => {
       });
     }
 
+    const filter = {};
+    const { category } = req.query;
+
+    if (category !== undefined && category !== "") {
+      if (!mongoose.Types.ObjectId.isValid(category)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid category. Must be a valid ObjectId.",
+        });
+      }
+      filter.category = category;
+    }
+
     const skip = (page - 1) * limit;
 
     const [data, totalRecords] = await Promise.all([
       populateVideos(
-        Videos.find().sort({ createdAt: -1 }).skip(skip).limit(limit)
+        Videos.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
       ),
-      Videos.countDocuments(),
+      Videos.countDocuments(filter),
     ]);
 
     const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
