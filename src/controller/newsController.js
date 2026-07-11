@@ -400,45 +400,57 @@ exports.deleteComment = async (req, res) => {
   }
 };
 
+const fetchLatestLiveNews = (limit = 10) =>
+  News.find({ isLive: true })
+    .sort({ createdTime: -1 })
+    .limit(limit)
+    .populate("category")
+    .populate("tags", "name");
+
 exports.getLatestNews = async (req, res) => {
   try {
-    const latestNews = await News.find({ isLive: true })
-      .sort({ createdTime: -1 }) // Sort by newest first
-      .limit(10) // Get only the latest 10 news articles
-      .populate("category") // Populate category name
-      .populate("tags", "name"); // Populate tags name
-
+    const latestNews = await fetchLatestLiveNews(10);
     res.status(200).json({ success: true, data: latestNews });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 exports.getNewsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    // Ensure the category exists in the database before querying news
-    const categoryExists = await Category.findById(category);
-    if (!categoryExists) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Category not found" });
+    let categoryExists = null;
+    try {
+      categoryExists = await Category.findById(category);
+    } catch {
+      categoryExists = null;
     }
 
-    // Find news by category (No need for ObjectId conversion, use string comparison)
-    const news = await News.find({ category: category, isLive: true })
-      .populate("category")
-      .populate("tags", "name");
+    if (categoryExists) {
+      const news = await News.find({ category, isLive: true })
+        .sort({ createdTime: -1 })
+        .populate("category")
+        .populate("tags", "name");
 
-    if (!news || news.length === 0) {
-      return res.status(200).json({
-        success: false,
-        message: "No news articles found for this category",
-        data: [],
-      });
+      if (news && news.length > 0) {
+        return res.status(200).json({
+          success: true,
+          data: news,
+          fallback: false,
+        });
+      }
     }
 
-    res.status(200).json({ success: true, data: news });
+    const latestNews = await fetchLatestLiveNews(10);
+    return res.status(200).json({
+      success: true,
+      data: latestNews,
+      fallback: true,
+      message: categoryExists
+        ? "No news articles found for this category; returning latest news"
+        : "Category not found; returning latest news",
+    });
   } catch (error) {
     res.status(200).json({ success: false, message: error.message, data: [] });
   }
