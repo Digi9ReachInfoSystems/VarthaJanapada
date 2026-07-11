@@ -1,7 +1,15 @@
 const mongoose = require("mongoose");
 
-const photosSchema = new mongoose.Schema({
-  title: {
+const photoCategorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  category_name: {
+    type: String,
+  },
+  english: {
     type: String,
   },
   hindi: {
@@ -10,26 +18,17 @@ const photosSchema = new mongoose.Schema({
   kannada: {
     type: String,
   },
-  English: {
+  description: {
     type: String,
-  },
-  photoImage: {
-    type: String,
-  },
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "PhotoCategory",
-    required: false,
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    // required: true,
   },
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
-    default: "pending",
+    default: "approved",
   },
   createdTime: {
     type: Date,
@@ -40,4 +39,4 @@ const photosSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Photos", photosSchema);
+module.exports = mongoose.model("PhotoCategory", photoCategorySchema);
