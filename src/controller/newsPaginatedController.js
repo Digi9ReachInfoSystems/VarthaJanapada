@@ -146,10 +146,16 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
     const magazineResult = parseMagazineTypeQuery(req, res);
     if (!magazineResult.ok) return;
 
+    const dateResult = parseDateQuery(req, res);
+    if (!dateResult.ok) return;
+
     const skip = (page - 1) * limit;
 
     if (newsType === "combinedlatestnews" && homepage) {
       const filter = buildCombinedLatestFilter(magazineResult.magazineType);
+      if (dateResult.dateRange) {
+        Object.assign(filter, dateResult.dateRange);
+      }
       const result = await fetchCombinedHomepageNews(filter);
 
       return res.status(200).json({
@@ -172,6 +178,9 @@ exports.getNewsByNewsTypePaginated = async (req, res) => {
         : { newsType };
     if (newsType !== "combinedlatestnews" && magazineResult.magazineType) {
       filter.magazineType = magazineResult.magazineType;
+    }
+    if (dateResult.dateRange) {
+      Object.assign(filter, dateResult.dateRange);
     }
 
     let data;
