@@ -537,3 +537,44 @@ exports.getArticlesPaginated = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+const TRENDING_SELECT_FIELDS =
+  "title English kannada hindi magazineType views createdTime";
+const TRENDING_MAX_LIMIT = 10;
+
+exports.getTrendingNews = async (req, res) => {
+  try {
+    const magazineResult = parseMagazineTypeQuery(req, res);
+    if (!magazineResult.ok) return;
+
+    if (
+      req.query.limit !== undefined &&
+      Number.isNaN(parseInt(req.query.limit, 10))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid limit. Must be a number between 1 and ${TRENDING_MAX_LIMIT}.`,
+      });
+    }
+
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit, 10) || TRENDING_MAX_LIMIT, 1),
+      TRENDING_MAX_LIMIT
+    );
+
+    const filter = {};
+    if (magazineResult.magazineType) {
+      filter.magazineType = magazineResult.magazineType;
+    }
+
+    const data = await News.find(filter)
+      .sort({ createdTime: -1 })
+      .limit(limit)
+      .select(TRENDING_SELECT_FIELDS)
+      .lean();
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

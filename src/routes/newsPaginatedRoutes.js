@@ -32,4 +32,9 @@ router.get(
   newsPaginatedController.getNewsByNewsTypePaginated
 );
 
+router.get(
+  "/trending",
+  newsPaginatedController.getTrendingNews
+);
+
 module.exports = router;
