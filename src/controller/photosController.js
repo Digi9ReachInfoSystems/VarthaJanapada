@@ -108,9 +108,9 @@ const approvePhotos = async (req, res) => {
 
 const getAllPhotos = async (req, res) => {
   try {
-    const photos = await Photos.find().populate(
-      "createdBy"
-    ); // Specify fields to populate
+    const photos = await Photos.find()
+      .populate("createdBy")
+      .sort({ createdTime: -1 });
     res.status(200).json(photos);
   } catch (error) {
     res.status(400).json({ message: error.message });
