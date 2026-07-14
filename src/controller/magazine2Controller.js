@@ -2,7 +2,38 @@ const Magazine = require("../models/magazineModel2"); // Capital 'M' for model
 const { search } = require("../routes/newsRoutes");
 const { Translate } = require("@google-cloud/translate").v2;
 const MagazineVersion = require("../models/magazineVersionModel2");
- 
+
+const MONTH_ORDER = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+};
+
+const getMonthRank = (month) =>
+  MONTH_ORDER[String(month || "").toLowerCase()] || 0;
+
+/** Latest first: year desc → month desc (Dec→Jan) → createdTime desc */
+const sortMagazinesLatestFirst = (magazines) =>
+  [...magazines].sort((a, b) => {
+    const yearA = parseInt(a.publishedYear, 10) || 0;
+    const yearB = parseInt(b.publishedYear, 10) || 0;
+    if (yearA !== yearB) return yearB - yearA;
+
+    const monthA = getMonthRank(a.publishedMonth);
+    const monthB = getMonthRank(b.publishedMonth);
+    if (monthA !== monthB) return monthB - monthA;
+
+    return new Date(b.createdTime || 0) - new Date(a.createdTime || 0);
+  });
 
 const createMagazine = async (req, res) => {
   try {
@@ -62,14 +93,13 @@ const getMagazines = async (req, res) => {
       }
     }
 
-    // Check if the homepage query parameter is passed
-    const limit = homepage ? 10 : null; // Limit to 10 items if homepage is true
+    const isHomepage = homepage === "true" || homepage === true;
 
-    // Find magazines based on the filter object and apply limit if necessary
-    const magazines = await Magazine.find(filter)
-      .sort({ createdTime: -1 }) // Sort by latest first
-      .limit(limit) // Apply limit if homepage is true
-      .populate("createdBy");
+    let magazines = await Magazine.find(filter).populate("createdBy");
+    magazines = sortMagazinesLatestFirst(magazines);
+    if (isHomepage) {
+      magazines = magazines.slice(0, 10);
+    }
 
     res.status(200).json({ success: true, data: magazines });
   } catch (error) {
@@ -311,33 +341,7 @@ const getMagazinesByYear = async (req, res) => {
       });
     }
 
-    // ✅ Month order mapping (case-insensitive)
-    const monthOrder = {
-      january: 1,
-      february: 2,
-      march: 3,
-      april: 4,
-      may: 5,
-      june: 6,
-      july: 7,
-      august: 8,
-      september: 9,
-      october: 10,
-      november: 11,
-      december: 12,
-    };
-
-    // ✅ Sort by month (Jan → Dec), and within same month by createdTime DESC
-    const sortedMagazines = magazines.sort((a, b) => {
-      const monthA = monthOrder[a.publishedMonth?.toLowerCase()] || 13;
-      const monthB = monthOrder[b.publishedMonth?.toLowerCase()] || 13;
-
-      // Sort by month ascending
-      if (monthA !== monthB) return monthA - monthB;
-
-      // Within same month, latest createdTime first
-      return new Date(b.createdTime) - new Date(a.createdTime);
-    });
+    const sortedMagazines = sortMagazinesLatestFirst(magazines);
 
     // ✅ Return response
     res.status(200).json({
