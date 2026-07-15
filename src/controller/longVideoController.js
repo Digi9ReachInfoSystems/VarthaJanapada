@@ -93,7 +93,9 @@ exports.uploadVideo = async (req, res) => {
 
 exports.getAllVideos = async (req, res) => {
   try {
-    const videos = await Videos.find()
+    const homepage = req.query.homepage === "true" || req.query.homepage === true;
+
+    let query = Videos.find()
     .populate({
       path: "Comments", // Populate the Comments array
       populate: {
@@ -110,6 +112,14 @@ exports.getAllVideos = async (req, res) => {
       path: "category",
       select: "name category_name english hindi kannada",
     })
+      .sort({ createdAt: -1 });
+
+    if (homepage) {
+      query = query.limit(10);
+    }
+
+    const videos = await query;
+
     res.status(200).json({ success: true, data: videos });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

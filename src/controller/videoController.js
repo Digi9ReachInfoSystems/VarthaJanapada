@@ -173,7 +173,10 @@ exports.uploadVideo = async (req, res) => {
 
 exports.getAllVideos = async (req, res) => {
   try {
-    const videos = await Videos.find().populate({
+    const homepage = req.query.homepage === "true" || req.query.homepage === true;
+
+    let query = Videos.find()
+      .populate({
       path: "Comments", // Populate the Comments array
       populate: {
         // Populate the 'user' field within each comment
@@ -185,7 +188,14 @@ exports.getAllVideos = async (req, res) => {
       .populate({
       path: "category",
       select: "name", // Select only the 'name' field from the Category model
-    });
+    })
+      .sort({ createdAt: -1 });
+
+    if (homepage) {
+      query = query.limit(10);
+    }
+
+    const videos = await query;
 
     res.status(200).json({ success: true, data: videos });
   } catch (error) {
