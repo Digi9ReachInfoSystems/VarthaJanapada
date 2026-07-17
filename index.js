@@ -35,6 +35,9 @@ const photoCategoryRoutes = require("./src/routes/photoCategoryRoutes");
 const staticRoutes = require("./src/routes/staticpageRoutes");
 const latestNotificationRoutes = require("./src/routes/latestNotificationRoutes");
 const playlistRoutes = require("./src/routes/playlistRoutes");
+const youtubeRoutes = require("./src/routes/youtubeRoutes");
+const liveTvRoutes = require("./src/routes/liveTvRoutes");
+const serviceRoutes = require("./src/routes/serviceRoutes");
 
 const path = require("path");
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -179,6 +182,9 @@ app.use("/api/photos-new", photosPaginatedRoutes);
 app.use("/api/static", staticRoutes);
 app.use("/api/latestnotifications", latestNotificationRoutes);
 app.use("/api/playlist", playlistRoutes);
+app.use("/api/youtube", youtubeRoutes);
+app.use("/api/live-tv", liveTvRoutes);
+app.use("/api/newarticles", serviceRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server running securely!");
