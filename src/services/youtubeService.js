@@ -39,10 +39,16 @@ function parseDurationSeconds(isoDuration) {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
-function pickThumbnail(snippet) {
+function pickThumbnail(snippet, videoId) {
   const thumbs = snippet?.thumbnails || {};
+  // Prefer highest available resolution (hqdefault is soft on Shorts cards)
   return (
+    thumbs.maxres?.url ||
+    thumbs.standard?.url ||
     thumbs.high?.url ||
+    (videoId
+      ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
+      : "") ||
     thumbs.medium?.url ||
     thumbs.default?.url ||
     ""
@@ -58,7 +64,7 @@ function mapVideoItem(video, { isShort = false } = {}) {
   return {
     videoId,
     title: snippet.title || "",
-    thumbnail: pickThumbnail(snippet),
+    thumbnail: pickThumbnail(snippet, videoId),
     publishedAt: snippet.publishedAt || "",
     durationSeconds,
     url: isShort
