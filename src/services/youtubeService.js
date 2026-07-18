@@ -2,6 +2,7 @@ const axios = require("axios");
 
 const YT_BASE = "https://www.googleapis.com/youtube/v3";
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+/** Shorts feed: only videos <= 60 seconds (never long videos). */
 const SHORTS_MAX_SECONDS = 60;
 const FETCH_PAGE_SIZE = 50;
 
@@ -51,23 +52,54 @@ function pickThumbnail(snippet) {
 function mapVideoItem(video, { isShort = false } = {}) {
   const videoId = video.id;
   const snippet = video.snippet || {};
+  const durationSeconds = parseDurationSeconds(
+    video.contentDetails?.duration
+  );
   return {
     videoId,
     title: snippet.title || "",
     thumbnail: pickThumbnail(snippet),
     publishedAt: snippet.publishedAt || "",
+    durationSeconds,
     url: isShort
       ? `https://www.youtube.com/shorts/${videoId}`
       : `https://www.youtube.com/watch?v=${videoId}`,
   };
 }
 
-function isShortVideo(video) {
-  const title = (video.snippet?.title || "").toLowerCase();
-  const desc = (video.snippet?.description || "").toLowerCase();
-  if (title.includes("#shorts") || desc.includes("#shorts")) return true;
+function isShortDuration(video) {
   const durationSec = parseDurationSeconds(video.contentDetails?.duration);
-  return durationSec !== null && durationSec > 0 && durationSec <= SHORTS_MAX_SECONDS;
+  if (durationSec === null || durationSec <= 0) return false;
+  return durationSec <= SHORTS_MAX_SECONDS;
+}
+
+/**
+ * YouTube's API does not expose whether a video is actually a Short.
+ * Its /shorts/:id route returns 200 for a real Short and redirects ordinary
+ * videos to /watch, so validate that route before adding an item to Shorts.
+ */
+async function isActualYoutubeShort(videoId) {
+  if (!videoId) return false;
+  try {
+    const response = await axios.head(
+      `https://www.youtube.com/shorts/${videoId}`,
+      {
+        maxRedirects: 0,
+        timeout: 8000,
+        validateStatus: (status) => status >= 200 && status < 400,
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+        },
+      }
+    );
+    return response.status === 200 && !response.headers.location;
+  } catch (error) {
+    console.error(
+      `YouTube Shorts validation failed for ${videoId}:`,
+      error.message
+    );
+    return false;
+  }
 }
 
 function isCurrentlyLive(video) {
@@ -106,26 +138,43 @@ async function getUploadsPlaylistId() {
 
 async function fetchRecentVideoDetails(maxItems = 50) {
   const playlistId = await getUploadsPlaylistId();
-  const playlistData = await ytGet("playlistItems", {
-    part: "contentDetails",
-    playlistId,
-    maxResults: Math.min(maxItems, FETCH_PAGE_SIZE),
-  });
+  const videoIds = [];
+  let pageToken = undefined;
+  const target = Math.min(Math.max(maxItems, 1), 100);
 
-  const videoIds = (playlistData.items || [])
-    .map((item) => item.contentDetails?.videoId)
-    .filter(Boolean);
+  while (videoIds.length < target) {
+    const playlistData = await ytGet("playlistItems", {
+      part: "contentDetails",
+      playlistId,
+      maxResults: Math.min(FETCH_PAGE_SIZE, target - videoIds.length),
+      ...(pageToken ? { pageToken } : {}),
+    });
+
+    for (const item of playlistData.items || []) {
+      const id = item.contentDetails?.videoId;
+      if (id) videoIds.push(id);
+    }
+
+    pageToken = playlistData.nextPageToken;
+    if (!pageToken) break;
+  }
 
   if (!videoIds.length) {
     return [];
   }
 
-  const videosData = await ytGet("videos", {
-    part: "snippet,contentDetails,liveStreamingDetails",
-    id: videoIds.join(","),
-  });
+  const videos = [];
+  // videos.list allows up to 50 ids per call
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const chunk = videoIds.slice(i, i + 50);
+    const videosData = await ytGet("videos", {
+      part: "snippet,contentDetails,liveStreamingDetails",
+      id: chunk.join(","),
+    });
+    videos.push(...(videosData.items || []));
+  }
 
-  return videosData.items || [];
+  return videos;
 }
 
 async function getCatalog() {
@@ -134,15 +183,31 @@ async function getCatalog() {
     return cache.catalog;
   }
 
-  const videos = await fetchRecentVideoDetails(50);
+  // Scan more uploads so Shorts feed fills with real shorts, not long videos
+  const videos = await fetchRecentVideoDetails(100);
   const shorts = [];
   const latestVideos = [];
+  const nonLiveVideos = videos.filter((video) => !isCurrentlyLive(video));
+  const shortCandidates = nonLiveVideos.filter(isShortDuration);
+  const actualShortIds = new Set(
+    (
+      await Promise.all(
+        shortCandidates.map(async (video) => ({
+          videoId: video.id,
+          isShort: await isActualYoutubeShort(video.id),
+        }))
+      )
+    )
+      .filter((result) => result.isShort)
+      .map((result) => result.videoId)
+  );
 
-  for (const video of videos) {
-    if (isCurrentlyLive(video)) continue;
-    if (isShortVideo(video)) {
+  for (const video of nonLiveVideos) {
+    const durationSec = parseDurationSeconds(video.contentDetails?.duration);
+    if (actualShortIds.has(video.id)) {
       shorts.push(mapVideoItem(video, { isShort: true }));
-    } else {
+    } else if (durationSec !== null && durationSec > 0) {
+      // Includes short-duration ordinary videos that redirect to /watch.
       latestVideos.push(mapVideoItem(video, { isShort: false }));
     }
   }
@@ -150,6 +215,12 @@ async function getCatalog() {
   cache.catalog = { shorts, latestVideos };
   cache.catalogExpiresAt = now + CACHE_TTL_MS;
   return cache.catalog;
+}
+
+/** Clear in-memory catalog (useful after filter changes / restart). */
+function clearCatalogCache() {
+  cache.catalog = null;
+  cache.catalogExpiresAt = 0;
 }
 
 async function getLatestVideos(limit = 20) {
@@ -220,4 +291,5 @@ module.exports = {
   getLatestVideos,
   getShorts,
   getLive,
+  clearCatalogCache,
 };
