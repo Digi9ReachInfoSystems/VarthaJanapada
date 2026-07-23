@@ -36,6 +36,7 @@ const staticRoutes = require("./src/routes/staticpageRoutes");
 const latestNotificationRoutes = require("./src/routes/latestNotificationRoutes");
 const playlistRoutes = require("./src/routes/playlistRoutes");
 const youtubeRoutes = require("./src/routes/youtubeRoutes");
+const instagramRoutes = require("./src/routes/instagramRoutes");
 const liveTvRoutes = require("./src/routes/liveTvRoutes");
 const serviceRoutes = require("./src/routes/serviceRoutes");
 
@@ -183,6 +184,7 @@ app.use("/api/static", staticRoutes);
 app.use("/api/latestnotifications", latestNotificationRoutes);
 app.use("/api/playlist", playlistRoutes);
 app.use("/api/youtube", youtubeRoutes);
+app.use("/api/instagram", instagramRoutes);
 app.use("/api/live-tv", liveTvRoutes);
 app.use("/api/newarticles", serviceRoutes);
 
