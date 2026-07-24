@@ -27,3 +27,18 @@ exports.getMedia = async (req, res) => {
     });
   }
 };
+
+exports.getReels = async (req, res) => {
+  try {
+    const data = await instagramService.getReels(req.query.limit);
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error("getReels error:", error.response?.data || error.message);
+    const { statusCode, message, details } = getErrorPayload(error);
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      ...(details ? { details } : {}),
+    });
+  }
+};
