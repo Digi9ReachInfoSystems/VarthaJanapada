@@ -2,3 +2,7 @@
 
 .env
 varthajanapadanewsapp-0e4332806e47.json
+
+# local Postman export
+DIPR_Postman_Collection.json
+DIPR_Postman_Collection_v2.1.json
