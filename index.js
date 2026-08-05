@@ -39,6 +39,7 @@ const youtubeRoutes = require("./src/routes/youtubeRoutes");
 const instagramRoutes = require("./src/routes/instagramRoutes");
 const liveTvRoutes = require("./src/routes/liveTvRoutes");
 const serviceRoutes = require("./src/routes/serviceRoutes");
+const karnatakaRoutes = require("./src/routes/karnatakaRoutes");
 
 const path = require("path");
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -187,6 +188,7 @@ app.use("/api/youtube", youtubeRoutes);
 app.use("/api/instagram", instagramRoutes);
 app.use("/api/live-tv", liveTvRoutes);
 app.use("/api/newarticles", serviceRoutes);
+app.use("/api/karnataka", karnatakaRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server running securely!");
