@@ -243,8 +243,8 @@ async function publishToPublic(rawBody, options = {}) {
         articleId: articleId || null,
         data: publicData,
         message: ok
-          ? "Forwarded to Public API"
-          : publicData?.message || `Public API returned ${response.status}`,
+          ? "News created successfully"
+          : publicData?.message || "Create failed. Please try again.",
       },
     };
   } catch (err) {
